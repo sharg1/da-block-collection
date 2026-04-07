@@ -1,0 +1,841 @@
+/* MEP Manifest Tool - Global Styles */
+:root {
+  --mep-bg: #f5f5f5;
+  --mep-surface: #ffffff;
+  --mep-border: #e0e0e0;
+  --mep-text: #2c2c2c;
+  --mep-text-secondary: #6e6e6e;
+  --mep-primary: #1473e6;
+  --mep-primary-hover: #0d66d0;
+  --mep-navy: #1b3a5c;
+  --mep-light-blue: #c8e1ff;
+  --mep-danger: #d7373f;
+  --mep-success: #12805c;
+  --mep-warning: #e68619;
+  --mep-font: 'Adobe Clean', 'adobe-clean', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --mep-radius: 4px;
+  --mep-toolbar-height: 48px;
+  --mep-tab-height: 40px;
+
+  /* Action colors */
+  --action-insert-after: #e6f4ea;
+  --action-insert-after-border: #34a853;
+  --action-replace: #fef7e0;
+  --action-replace-border: #f9ab00;
+  --action-remove: #fce8e6;
+  --action-remove-border: #ea4335;
+  --action-insert-before: #e8f0fe;
+  --action-insert-before-border: #4285f4;
+  --action-replace-fragment: #fce8f4;
+  --action-replace-fragment-border: #d93a8c;
+  --action-append-to-section: #f3e8fd;
+  --action-append-to-section-border: #9334e6;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--mep-font);
+  font-size: 14px;
+  color: var(--mep-text);
+  background: var(--mep-bg);
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Toolbar */
+.mep-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--mep-toolbar-height);
+  padding: 0 12px;
+  background: var(--mep-surface);
+  border-bottom: 1px solid var(--mep-border);
+  flex-shrink: 0;
+}
+
+.mep-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mep-toolbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mep-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.mep-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Buttons */
+.mep-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--mep-border);
+  border-radius: var(--mep-radius);
+  background: var(--mep-surface);
+  color: var(--mep-text);
+  font-family: var(--mep-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.mep-btn:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.mep-btn-primary {
+  background: var(--mep-primary);
+  color: #fff;
+  border-color: var(--mep-primary);
+}
+
+.mep-btn-primary:hover {
+  background: var(--mep-primary-hover);
+  border-color: var(--mep-primary-hover);
+}
+
+.mep-btn-icon {
+  width: 32px;
+  padding: 0;
+  font-size: 18px;
+}
+
+/* Tab Navigation */
+.mep-tabs {
+  display: flex;
+  align-items: stretch;
+  height: var(--mep-tab-height);
+  background: var(--mep-surface);
+  border-bottom: 1px solid var(--mep-border);
+  flex-shrink: 0;
+  padding: 0 12px;
+  gap: 0;
+}
+
+.mep-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mep-text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--mep-font);
+}
+
+.mep-tab:hover {
+  color: var(--mep-text);
+}
+
+.mep-tab.active {
+  color: var(--mep-primary);
+  border-bottom-color: var(--mep-primary);
+}
+
+/* Tab Content */
+.mep-tab-content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* Info bar — horizontal inline strip at top of Experiences tab */
+.mep-info-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--mep-border);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.mep-info-bar .mep-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.mep-info-bar .mep-field-label {
+  white-space: nowrap;
+  text-transform: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.mep-info-bar .mep-select,
+.mep-info-bar .mep-input {
+  width: auto;
+  min-width: 120px;
+}
+
+/* Info Tab (legacy — file kept but no longer used in tabs) */
+.mep-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.mep-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mep-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mep-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mep-select,
+.mep-input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--mep-border);
+  border-radius: var(--mep-radius);
+  font-family: var(--mep-font);
+  font-size: 14px;
+  color: var(--mep-text);
+  background: var(--mep-surface);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.mep-select:focus,
+.mep-input:focus {
+  border-color: var(--mep-primary);
+}
+
+/* Placeholder Tab */
+.mep-placeholders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.mep-placeholder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mep-placeholder-row .mep-input {
+  flex: 1;
+}
+
+.mep-placeholder-row .mep-btn-icon {
+  color: var(--mep-danger);
+  border-color: transparent;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.mep-placeholder-row .mep-btn-icon:hover {
+  background: var(--action-remove);
+}
+
+/* Experiences Grid */
+.mep-grid-wrapper {
+  overflow: auto;
+  flex: 1;
+}
+
+.mep-grid {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 13px;
+}
+
+.mep-grid th,
+.mep-grid td {
+  border: 1px solid var(--mep-border);
+  padding: 0;
+  min-width: 120px;
+  position: relative;
+}
+
+.mep-grid th {
+  height: 36px;
+  vertical-align: middle;
+}
+
+.mep-grid td {
+  height: auto;
+  min-height: 36px;
+  vertical-align: top;
+}
+
+/* Column resize handle */
+.mep-col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 1;
+}
+
+.mep-col-resize-handle:hover,
+.mep-col-resize-handle:active {
+  background: var(--mep-primary);
+  opacity: 0.4;
+}
+
+.mep-grid th {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0 8px;
+  white-space: nowrap;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.mep-grid th.col-action {
+  background: #f0f0f0;
+  color: var(--mep-text);
+  min-width: 180px;
+}
+
+.mep-grid th.col-selector {
+  background: #f0f0f0;
+  color: var(--mep-text);
+  min-width: 200px;
+}
+
+.mep-grid th.col-page-filter {
+  background: #f0f0f0;
+  color: var(--mep-text);
+  min-width: 160px;
+}
+
+.mep-grid th.col-experience {
+  background: var(--mep-navy);
+  color: #fff;
+  min-width: 180px;
+}
+
+.mep-grid th.col-experience.target {
+  background: #4a90d9;
+}
+
+.mep-grid th.col-add {
+  background: #f0f0f0;
+  min-width: 40px;
+  width: 40px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.mep-grid th.col-add:hover {
+  background: #e0e0e0;
+}
+
+/* Row handle */
+.mep-grid td.col-handle {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  text-align: center;
+  color: var(--mep-text-secondary);
+  cursor: grab;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.mep-grid td.col-handle:hover {
+  background: #f0f0f0;
+}
+
+/* Row delete */
+.mep-grid td.col-delete {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  text-align: center;
+  padding: 0;
+}
+
+.mep-grid td.col-delete button {
+  background: none;
+  border: none;
+  color: var(--mep-text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.mep-grid td.col-delete button:hover {
+  color: var(--mep-danger);
+  background: var(--action-remove);
+}
+
+/* Cell wrapper — flex container for textarea + link button */
+.mep-grid td .cell-wrapper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 36px;
+}
+
+/* Textarea cell input (Selector + Experience columns) */
+.mep-grid td .cell-input {
+  flex: 1;
+  min-height: 36px;
+  height: auto;
+  border: none;
+  padding: 4px 8px;
+  font-family: var(--mep-font);
+  font-size: 13px;
+  color: var(--mep-text);
+  background: transparent;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* Plain input cell (Page Filter) */
+.mep-grid td .cell-input-plain {
+  width: 100%;
+  height: 36px;
+  border: none;
+  padding: 4px 8px;
+  font-family: var(--mep-font);
+  font-size: 13px;
+  color: var(--mep-text);
+  background: transparent;
+  outline: none;
+  white-space: nowrap;
+}
+
+.mep-grid td .cell-input:focus,
+.mep-grid td .cell-input-plain:focus {
+  background: #f0f7ff;
+}
+
+/* URL link button */
+.mep-grid td .cell-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 8px 3px 0 0;
+  font-size: 11px;
+  color: var(--mep-primary);
+  text-decoration: none;
+  flex-shrink: 0;
+  opacity: 0.65;
+  border-radius: 2px;
+}
+
+.mep-grid td .cell-link-btn:hover {
+  opacity: 1;
+  background: var(--mep-light-blue);
+}
+
+/* Action select */
+.mep-grid td .action-select {
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 4px 8px;
+  font-family: var(--mep-font);
+  font-size: 13px;
+  color: var(--mep-text);
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+.mep-grid td.action-cell {
+  padding: 0;
+}
+
+/* Action cell left-border accent (td only) */
+.mep-grid td.action-insertcontentafter  { border-left: 3px solid var(--action-insert-after-border); }
+.mep-grid td.action-replacecontent      { border-left: 3px solid var(--action-replace-border); }
+.mep-grid td.action-remove              { border-left: 3px solid var(--action-remove-border); }
+.mep-grid td.action-insertcontentbefore { border-left: 3px solid var(--action-insert-before-border); }
+.mep-grid td.action-replacefragment     { border-left: 3px solid var(--action-replace-fragment-border); }
+.mep-grid td.action-appendtosection     { border-left: 3px solid var(--action-append-to-section-border); }
+
+/* Full-row background tint */
+.mep-grid tr.row-insertcontentafter > td  { background: var(--action-insert-after); }
+.mep-grid tr.row-replacecontent > td      { background: var(--action-replace); }
+.mep-grid tr.row-remove > td              { background: var(--action-remove); }
+.mep-grid tr.row-insertcontentbefore > td { background: var(--action-insert-before); }
+.mep-grid tr.row-replacefragment > td     { background: var(--action-replace-fragment); }
+.mep-grid tr.row-appendtosection > td     { background: var(--action-append-to-section); }
+
+/* Grid footer */
+.mep-grid-footer {
+  padding: 8px 0;
+}
+
+/* Column name dialog */
+.mep-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.mep-dialog {
+  background: var(--mep-surface);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 320px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.mep-dialog h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.mep-dialog .mep-field {
+  margin-bottom: 16px;
+}
+
+.mep-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Status bar */
+.mep-status {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--mep-text-secondary);
+  background: var(--mep-surface);
+  border-top: 1px solid var(--mep-border);
+  flex-shrink: 0;
+}
+
+.mep-status-saved {
+  color: var(--mep-success);
+}
+
+.mep-status-unsaved {
+  color: var(--mep-warning);
+}
+
+/* File browser */
+.mep-file-browser {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mep-file-browser-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--mep-border);
+}
+
+.mep-file-browser-header h2 {
+  font-size: 18px;
+}
+
+.mep-file-list {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+}
+
+.mep-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--mep-radius);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mep-file-item:hover {
+  background: #f0f0f0;
+}
+
+.mep-file-item.is-folder {
+  font-weight: 600;
+}
+
+.mep-file-item-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.mep-file-item-name {
+  flex: 1;
+}
+
+/* File browser legend */
+.mep-file-legend {
+  display: flex;
+  gap: 16px;
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--mep-text-secondary);
+  border-bottom: 1px solid var(--mep-border);
+  background: #fafafa;
+}
+
+.mep-legend-sheet {
+  color: var(--mep-success);
+  font-weight: 600;
+}
+
+.mep-legend-doc {
+  color: #bbb;
+}
+
+/* Sheet item highlight */
+.mep-file-item.is-sheet .mep-file-item-name {
+  font-weight: 600;
+}
+
+/* File type label for inactive items */
+.mep-file-type-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #bbb;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+/* Breadcrumb */
+.mep-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.mep-crumb {
+  background: none;
+  border: none;
+  color: var(--mep-primary);
+  cursor: pointer;
+  font-family: var(--mep-font);
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: var(--mep-radius);
+}
+
+.mep-crumb:hover {
+  background: #f0f0f0;
+}
+
+.mep-crumb-sep {
+  color: var(--mep-text-secondary);
+}
+
+/* File item active/inactive states */
+.mep-file-item.is-inactive {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.mep-file-open-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mep-primary);
+  padding: 2px 8px;
+  border: 1px solid var(--mep-primary);
+  border-radius: var(--mep-radius);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.mep-file-item:hover .mep-file-open-label {
+  opacity: 1;
+}
+
+/* Toast notification */
+.mep-toast {
+  position: fixed;
+  top: calc(var(--mep-toolbar-height) + 8px);
+  right: 16px;
+  z-index: 200;
+  min-width: 320px;
+  max-width: 480px;
+  background: var(--mep-surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  border-left: 4px solid var(--mep-success);
+  padding: 12px 14px;
+  animation: mep-toast-in 0.2s ease;
+}
+
+.mep-toast-error {
+  border-left-color: var(--mep-danger);
+}
+
+@keyframes mep-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mep-toast-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.mep-toast-icon {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mep-success);
+}
+
+.mep-toast-error .mep-toast-icon {
+  color: var(--mep-danger);
+}
+
+.mep-toast-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mep-text);
+}
+
+.mep-toast-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--mep-text-secondary);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.mep-toast-close:hover {
+  color: var(--mep-text);
+}
+
+.mep-toast-url-row {
+  margin: 6px 0 4px;
+  overflow: hidden;
+}
+
+.mep-toast-url {
+  font-size: 11px;
+  color: var(--mep-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.mep-toast-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mep-toast-btn {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.mep-toast-detail {
+  font-size: 12px;
+  color: var(--mep-danger);
+  margin-top: 4px;
+}
+
+/* Button loading state */
+.mep-btn-loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Empty state */
+.mep-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--mep-text-secondary);
+}
+
+.mep-empty-icon {
+  font-size: 48px;
+  opacity: 0.3;
+}
