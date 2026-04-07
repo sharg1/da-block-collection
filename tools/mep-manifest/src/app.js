@@ -113,7 +113,13 @@ function showFileBrowser() {
     site,
     startPath: '',
     onOpen: (path) => handleOpen(path),
-    onNew: (folderPath) => handleNew(folderPath),
+    onNew: (filePath) => {
+      // eslint-disable-next-line no-restricted-globals, no-alert
+      if (model.dirty && !confirm('Discard unsaved changes?')) return;
+      model = ManifestModel.createNew();
+      model.filePath = filePath;
+      renderEditor();
+    },
   });
 }
 

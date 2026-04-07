@@ -12,10 +12,29 @@ function getExt(item) {
 }
 
 /**
+ * Format a lastModified value (ISO string or timestamp) into "DD Mon YYYY HH:MM".
+ */
+function formatDate(raw) {
+  if (!raw) return '';
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = d.toLocaleString('en', { month: 'short' });
+  const year = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${day} ${mon} ${year} ${hh}:${mm}`;
+}
+
+/**
  * File browser for navigating DA content and opening MEP manifest JSON files.
- * - Folders: navigable
- * - .json files (sheets/manifests): active, openable
- * - Everything else (DA docs, html): grayed out / inactive
+ * Mirrors the native DA file browser UI:
+ *  - Single breadcrumb bar: org > site > path > NEW (pill chips)
+ *  - Inline "new file" creation (no modal) — spaces replaced with hyphens
+ *  - Column headers: NAME | MODIFIED
+ *  - Folders: navigable
+ *  - .json files (sheets/manifests): active, openable
+ *  - Everything else (DA docs, html): grayed out / inactive
  */
 export function renderFileBrowser(container, {
   org, site, startPath = '', onOpen, onNew,
@@ -35,59 +54,129 @@ export function renderFileBrowser(container, {
     await renderBrowser();
   }
 
-  async function renderBrowser() {
-    wrap.innerHTML = '';
+  /** Render the breadcrumb bar in normal mode. */
+  function renderBreadcrumb(header) {
+    header.innerHTML = '';
 
-    // ---- Header ----
-    const header = document.createElement('div');
-    header.className = 'mep-file-browser-header';
+    // org — static label (non-clickable chip)
+    const orgLabel = document.createElement('span');
+    orgLabel.className = 'mep-crumb mep-crumb-static';
+    orgLabel.textContent = org;
+    header.append(orgLabel);
 
-    const titleArea = document.createElement('div');
-    titleArea.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+    // separator + site (clickable, navigates to root)
+    const sep0 = document.createElement('span');
+    sep0.className = 'mep-crumb-sep';
+    sep0.textContent = '›';
+    const siteCrumb = document.createElement('button');
+    siteCrumb.className = 'mep-crumb';
+    siteCrumb.textContent = site;
+    siteCrumb.addEventListener('click', () => navigate(''));
+    header.append(sep0, siteCrumb);
 
-    const title = document.createElement('h2');
-    title.textContent = 'MEP Manifest Tool';
-
-    // Breadcrumb
-    const breadcrumb = document.createElement('div');
-    breadcrumb.className = 'mep-breadcrumb';
-
-    const rootCrumb = document.createElement('button');
-    rootCrumb.className = 'mep-crumb';
-    rootCrumb.textContent = site;
-    rootCrumb.addEventListener('click', () => navigate(''));
-    breadcrumb.append(rootCrumb);
-
+    // path segment chips
     getPathSegments().forEach((seg, idx, segs) => {
       const sep = document.createElement('span');
       sep.className = 'mep-crumb-sep';
-      sep.textContent = '/';
-
+      sep.textContent = '›';
       const crumb = document.createElement('button');
       crumb.className = 'mep-crumb';
       crumb.textContent = seg;
       crumb.addEventListener('click', () => {
         navigate(segs.slice(0, idx + 1).join('/'));
       });
-      breadcrumb.append(sep, crumb);
+      header.append(sep, crumb);
     });
 
-    titleArea.append(title, breadcrumb);
-
+    // NEW pill button
+    const newSep = document.createElement('span');
+    newSep.className = 'mep-crumb-sep';
+    newSep.textContent = '›';
     const newBtn = document.createElement('button');
-    newBtn.className = 'mep-btn mep-btn-primary';
-    newBtn.textContent = '+ New Manifest';
-    newBtn.addEventListener('click', () => onNew(currentPath));
+    newBtn.className = 'mep-fb-new-btn';
+    newBtn.textContent = 'NEW';
+    newBtn.addEventListener('click', () => renderNewMode(header));
+    header.append(newSep, newBtn);
+  }
 
-    header.append(titleArea, newBtn);
+  /** Replace NEW button with inline input + Create sheet / Cancel. */
+  function renderNewMode(header) {
+    // Remove last sep + NEW button
+    header.lastElementChild.remove();
+    header.lastElementChild.remove();
+
+    const sep = document.createElement('span');
+    sep.className = 'mep-crumb-sep';
+    sep.textContent = '›';
+
+    const input = document.createElement('input');
+    input.className = 'mep-fb-new-input';
+    input.type = 'text';
+    input.placeholder = 'new-manifest';
+
+    const createBtn = document.createElement('button');
+    createBtn.className = 'mep-btn mep-btn-primary mep-fb-new-create';
+    createBtn.textContent = 'Create sheet';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'mep-btn mep-fb-new-cancel';
+    cancelBtn.textContent = 'Cancel';
+
+    function doCreate() {
+      const name = input.value.trim().replace(/\.json$/i, '');
+      if (!name || name.includes('/')) {
+        input.classList.add('mep-fb-input-error');
+        input.focus();
+        return;
+      }
+      const filePath = currentPath ? `${currentPath}/${name}.json` : `${name}.json`;
+      renderBreadcrumb(header);
+      onNew(filePath);
+    }
+
+    function doCancel() {
+      renderBreadcrumb(header);
+    }
+
+    // Replace spaces with hyphens as the user types
+    input.addEventListener('input', () => {
+      const { selectionStart } = input;
+      const replaced = input.value.replace(/ /g, '-');
+      if (replaced !== input.value) {
+        input.value = replaced;
+        input.setSelectionRange(selectionStart, selectionStart);
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doCreate();
+      if (e.key === 'Escape') doCancel();
+    });
+
+    createBtn.addEventListener('click', doCreate);
+    cancelBtn.addEventListener('click', doCancel);
+
+    header.append(sep, input, createBtn, cancelBtn);
+    requestAnimationFrame(() => input.focus());
+  }
+
+  async function renderBrowser() {
+    wrap.innerHTML = '';
+
+    // ---- Breadcrumb header ----
+    const header = document.createElement('div');
+    header.className = 'mep-file-browser-header';
+    renderBreadcrumb(header);
     wrap.append(header);
 
-    // ---- Legend ----
-    const legend = document.createElement('div');
-    legend.className = 'mep-file-legend';
-    legend.innerHTML = '<span class="mep-legend-sheet">● Sheet / Manifest</span>'
-      + '<span class="mep-legend-doc">● DA Document (grayed out)</span>';
-    wrap.append(legend);
+    // ---- Column header row ----
+    const colHeader = document.createElement('div');
+    colHeader.className = 'mep-file-col-header';
+    colHeader.innerHTML = '<span class="mep-file-col-check"></span>'
+      + '<span class="mep-file-col-filter" title="Filter">&#9663;</span>'
+      + '<span class="mep-file-col-name">NAME</span>'
+      + '<span class="mep-file-col-modified">MODIFIED</span>';
+    wrap.append(colHeader);
 
     // ---- File list ----
     const listEl = document.createElement('div');
@@ -135,6 +224,10 @@ export function renderFileBrowser(container, {
           !isActive ? 'is-inactive' : '',
         ].filter(Boolean).join(' ');
 
+        // Visual checkbox (mirrors DA)
+        const chk = document.createElement('span');
+        chk.className = 'mep-file-item-check';
+
         const icon = document.createElement('span');
         icon.className = 'mep-file-item-icon';
         // eslint-disable-next-line no-nested-ternary
@@ -144,18 +237,15 @@ export function renderFileBrowser(container, {
         nameEl.className = 'mep-file-item-name';
         nameEl.textContent = name;
 
-        row.append(icon, nameEl);
+        const modEl = document.createElement('span');
+        modEl.className = 'mep-file-modified';
+        modEl.textContent = formatDate(item.lastModified || item.modified || item.lastmodified);
 
-        if (!isActive) {
-          const typeLabel = document.createElement('span');
-          typeLabel.className = 'mep-file-type-label';
-          typeLabel.textContent = ext?.toUpperCase() || 'FILE';
-          row.append(typeLabel);
-        }
+        row.append(chk, icon, nameEl, modEl);
 
         if (isFolder) {
           const chevron = document.createElement('span');
-          chevron.className = 'mep-crumb-sep';
+          chevron.className = 'mep-file-item-chevron';
           chevron.textContent = '›';
           row.append(chevron);
           row.addEventListener('click', () => {

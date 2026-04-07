@@ -595,72 +595,203 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  background: var(--mep-surface);
 }
 
+/* Single-row breadcrumb bar: org › site › path › NEW — matches DA pill style */
 .mep-file-browser-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px;
+  gap: 6px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--mep-border);
+  background: var(--mep-surface);
+  flex-wrap: wrap;
+  min-height: 52px;
 }
 
-.mep-file-browser-header h2 {
-  font-size: 18px;
+/* Breadcrumb pill chips */
+.mep-crumb {
+  background: #f5f5f5;
+  border: 1px solid #d8d8d8;
+  color: var(--mep-text);
+  cursor: pointer;
+  font-family: var(--mep-font);
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  line-height: 1.4;
+  transition: background 0.15s, border-color 0.15s;
 }
 
+.mep-crumb:hover {
+  background: #e8e8e8;
+  border-color: #b8b8b8;
+}
+
+/* Org chip — static, not clickable */
+.mep-crumb.mep-crumb-static {
+  color: var(--mep-text);
+  cursor: default;
+  font-weight: 500;
+}
+
+.mep-crumb.mep-crumb-static:hover {
+  background: #f5f5f5;
+  border-color: #d8d8d8;
+}
+
+.mep-crumb-sep {
+  color: var(--mep-text-secondary);
+  font-size: 16px;
+  user-select: none;
+  line-height: 1;
+}
+
+/* NEW pill button */
+.mep-fb-new-btn {
+  background: var(--mep-primary);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 5px 16px;
+  font-family: var(--mep-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  line-height: 1.4;
+}
+
+.mep-fb-new-btn:hover {
+  background: var(--mep-primary-hover);
+}
+
+/* Inline new-file creation controls */
+.mep-fb-new-input {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--mep-primary);
+  border-radius: 16px;
+  font-family: var(--mep-font);
+  font-size: 13px;
+  color: var(--mep-text);
+  outline: none;
+  width: 200px;
+  background: var(--mep-surface);
+}
+
+.mep-fb-new-input.mep-fb-input-error {
+  border-color: var(--mep-danger);
+}
+
+.mep-fb-new-create {
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
+  border-radius: 16px;
+}
+
+.mep-fb-new-cancel {
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
+  border-radius: 16px;
+}
+
+/* Column header row — checkbox + filter + NAME + MODIFIED */
+.mep-file-col-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px 6px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mep-text-secondary);
+  border-bottom: 1px solid var(--mep-border);
+  background: var(--mep-surface);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mep-file-col-check {
+  width: 20px;
+  height: 14px;
+  border: 1.5px solid #bbb;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.mep-file-col-filter {
+  font-size: 14px;
+  color: #bbb;
+  margin-right: 10px;
+  flex-shrink: 0;
+  cursor: default;
+  user-select: none;
+}
+
+.mep-file-col-name {
+  flex: 1;
+}
+
+.mep-file-col-modified {
+  width: 180px;
+  text-align: right;
+}
+
+/* File list — white, full-width rows */
 .mep-file-list {
   flex: 1;
   overflow: auto;
-  padding: 8px;
+  background: var(--mep-surface);
 }
 
 .mep-file-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: var(--mep-radius);
+  padding: 0 16px 0 20px;
+  min-height: 52px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--mep-border);
+  background: var(--mep-surface);
 }
 
 .mep-file-item:hover {
-  background: #f0f0f0;
+  background: #f5f5f5;
 }
 
 .mep-file-item.is-folder {
   font-weight: 600;
 }
 
-.mep-file-item-icon {
-  font-size: 16px;
+/* Visual checkbox per row */
+.mep-file-item-check {
   width: 20px;
+  height: 14px;
+  border: 1.5px solid #d0d0d0;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.mep-file-item-icon {
+  font-size: 18px;
+  width: 24px;
   text-align: center;
+  flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .mep-file-item-name {
   flex: 1;
-}
-
-/* File browser legend */
-.mep-file-legend {
-  display: flex;
-  gap: 16px;
-  padding: 6px 16px;
-  font-size: 11px;
-  color: var(--mep-text-secondary);
-  border-bottom: 1px solid var(--mep-border);
-  background: #fafafa;
-}
-
-.mep-legend-sheet {
-  color: var(--mep-success);
-  font-weight: 600;
-}
-
-.mep-legend-doc {
-  color: #bbb;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Sheet item highlight */
@@ -668,60 +799,43 @@ body {
   font-weight: 600;
 }
 
-/* File type label for inactive items */
-.mep-file-type-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #bbb;
-  background: #f0f0f0;
-  padding: 1px 6px;
-  border-radius: 3px;
-  letter-spacing: 0.5px;
-}
-
-/* Breadcrumb */
-.mep-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 12px;
-}
-
-.mep-crumb {
-  background: none;
-  border: none;
-  color: var(--mep-primary);
-  cursor: pointer;
-  font-family: var(--mep-font);
-  font-size: 12px;
-  padding: 2px 4px;
-  border-radius: var(--mep-radius);
-}
-
-.mep-crumb:hover {
-  background: #f0f0f0;
-}
-
-.mep-crumb-sep {
+/* Modified date column */
+.mep-file-modified {
+  width: 180px;
+  text-align: right;
+  font-size: 13px;
   color: var(--mep-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* File item active/inactive states */
+/* Folder chevron — far right */
+.mep-file-item-chevron {
+  color: var(--mep-text-secondary);
+  font-size: 18px;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+/* Inactive items — subtle fade (non-sheet/folder files) */
 .mep-file-item.is-inactive {
-  opacity: 0.35;
+  opacity: 0.5;
   cursor: default;
   pointer-events: none;
 }
 
+/* "Open" pill — revealed on row hover */
 .mep-file-open-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--mep-primary);
-  padding: 2px 8px;
+  padding: 2px 10px;
   border: 1px solid var(--mep-primary);
-  border-radius: var(--mep-radius);
+  border-radius: 10px;
   opacity: 0;
   transition: opacity 0.15s;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 .mep-file-item:hover .mep-file-open-label {
