@@ -160,12 +160,17 @@ export class ManifestModel {
     // Load experiences
     const expData = sheetData.experiences?.data || sheetData.data || [];
     if (expData.length > 0) {
-      // Discover columns from first row keys
-      const fixedCols = ['action', 'selector', 'pagefilter', 'page filter'];
+      // Case-insensitive key lookup
+      const getVal = (row, key) => {
+        const lk = key.toLowerCase();
+        const found = Object.keys(row).find((k) => k.toLowerCase() === lk);
+        return found ? (row[found] || '') : '';
+      };
+
+      // Discover columns from first row keys, excluding fixed ones
+      const fixedCols = ['action', 'selector', 'page filter', 'pagefilter'];
       const allKeys = Object.keys(expData[0]);
-      const expColNames = allKeys.filter(
-        (k) => !fixedCols.includes(k.toLowerCase()) && k !== 'Action' && k !== 'Selector' && k !== 'Page Filter',
-      );
+      const expColNames = allKeys.filter((k) => !fixedCols.includes(k.toLowerCase()));
 
       this.experiences.columns = expColNames.map((name) => ({ name }));
       this.experiences.rows = expData.map((row) => {
@@ -174,9 +179,9 @@ export class ManifestModel {
           values[name] = row[name] || '';
         });
         return {
-          action: row.Action || '',
-          selector: row.Selector || '',
-          pageFilter: row['Page Filter'] || '',
+          action: getVal(row, 'action'),
+          selector: getVal(row, 'selector'),
+          pageFilter: getVal(row, 'page filter'),
           values,
         };
       });
