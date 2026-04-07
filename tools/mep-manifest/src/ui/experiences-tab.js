@@ -2,22 +2,30 @@ import { ACTIONS, MANIFEST_TYPES, EXECUTION_ORDERS } from '../data/manifest-mode
 
 // Maps action name → CSS class for the action <td> left-border accent
 const ACTION_CSS_MAP = {
-  insertContentAfter: 'action-insertcontentafter',
-  replaceContent: 'action-replacecontent',
   remove: 'action-remove',
-  insertContentBefore: 'action-insertcontentbefore',
-  replaceFragment: 'action-replacefragment',
+  replace: 'action-replace',
+  insertBefore: 'action-insertbefore',
+  insertAfter: 'action-insertafter',
+  prependToSection: 'action-prependtosection',
   appendToSection: 'action-appendtosection',
+  replacePage: 'action-replacepage',
+  useBlockCode: 'action-useblockcode',
+  insertScript: 'action-insertscript',
+  updateMetadata: 'action-updatemetadata',
 };
 
 // Maps action name → CSS class applied to the entire <tr> for row background
 const ROW_CSS_MAP = {
-  insertContentAfter: 'row-insertcontentafter',
-  replaceContent: 'row-replacecontent',
   remove: 'row-remove',
-  insertContentBefore: 'row-insertcontentbefore',
-  replaceFragment: 'row-replacefragment',
+  replace: 'row-replace',
+  insertBefore: 'row-insertbefore',
+  insertAfter: 'row-insertafter',
+  prependToSection: 'row-prependtosection',
   appendToSection: 'row-appendtosection',
+  replacePage: 'row-replacepage',
+  useBlockCode: 'row-useblockcode',
+  insertScript: 'row-insertscript',
+  updateMetadata: 'row-updatemetadata',
 };
 
 /**

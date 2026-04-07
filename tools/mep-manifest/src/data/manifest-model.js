@@ -4,12 +4,16 @@
  */
 
 const ACTIONS = [
-  'insertContentAfter',
-  'replaceContent',
   'remove',
-  'insertContentBefore',
-  'replaceFragment',
+  'replace',
+  'insertBefore',
+  'insertAfter',
+  'prependToSection',
   'appendToSection',
+  'replacePage',
+  'useBlockCode',
+  'insertScript',
+  'updateMetadata',
 ];
 
 const MANIFEST_TYPES = ['personalization', 'test', 'promo'];

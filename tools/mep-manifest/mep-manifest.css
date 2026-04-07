@@ -18,18 +18,16 @@
   --mep-tab-height: 40px;
 
   /* Action colors */
-  --action-insert-after: #e6f4ea;
-  --action-insert-after-border: #34a853;
-  --action-replace: #fef7e0;
-  --action-replace-border: #f9ab00;
   --action-remove: #fce8e6;
   --action-remove-border: #ea4335;
-  --action-insert-before: #e8f0fe;
-  --action-insert-before-border: #4285f4;
-  --action-replace-fragment: #fce8f4;
-  --action-replace-fragment-border: #d93a8c;
-  --action-append-to-section: #f3e8fd;
-  --action-append-to-section-border: #9334e6;
+  --action-blue: #e8f0fe;
+  --action-blue-border: #4285f4;
+  --action-purple: #f3e8fd;
+  --action-purple-border: #9334e6;
+  --action-yellow: #fef7e0;
+  --action-yellow-border: #f9ab00;
+  --action-green: #e6f4ea;
+  --action-green-border: #34a853;
 }
 
 * {
@@ -506,20 +504,28 @@ body {
 }
 
 /* Action cell left-border accent (td only) */
-.mep-grid td.action-insertcontentafter  { border-left: 3px solid var(--action-insert-after-border); }
-.mep-grid td.action-replacecontent      { border-left: 3px solid var(--action-replace-border); }
-.mep-grid td.action-remove              { border-left: 3px solid var(--action-remove-border); }
-.mep-grid td.action-insertcontentbefore { border-left: 3px solid var(--action-insert-before-border); }
-.mep-grid td.action-replacefragment     { border-left: 3px solid var(--action-replace-fragment-border); }
-.mep-grid td.action-appendtosection     { border-left: 3px solid var(--action-append-to-section-border); }
+.mep-grid td.action-remove          { border-left: 3px solid var(--action-remove-border); }
+.mep-grid td.action-replace,
+.mep-grid td.action-insertbefore,
+.mep-grid td.action-insertafter,
+.mep-grid td.action-prependtosection,
+.mep-grid td.action-appendtosection { border-left: 3px solid var(--action-blue-border); }
+.mep-grid td.action-replacepage,
+.mep-grid td.action-useblockcode    { border-left: 3px solid var(--action-purple-border); }
+.mep-grid td.action-insertscript    { border-left: 3px solid var(--action-yellow-border); }
+.mep-grid td.action-updatemetadata  { border-left: 3px solid var(--action-green-border); }
 
 /* Full-row background tint */
-.mep-grid tr.row-insertcontentafter > td  { background: var(--action-insert-after); }
-.mep-grid tr.row-replacecontent > td      { background: var(--action-replace); }
-.mep-grid tr.row-remove > td              { background: var(--action-remove); }
-.mep-grid tr.row-insertcontentbefore > td { background: var(--action-insert-before); }
-.mep-grid tr.row-replacefragment > td     { background: var(--action-replace-fragment); }
-.mep-grid tr.row-appendtosection > td     { background: var(--action-append-to-section); }
+.mep-grid tr.row-remove > td                                    { background: var(--action-remove); }
+.mep-grid tr.row-replace > td,
+.mep-grid tr.row-insertbefore > td,
+.mep-grid tr.row-insertafter > td,
+.mep-grid tr.row-prependtosection > td,
+.mep-grid tr.row-appendtosection > td  { background: var(--action-blue); }
+.mep-grid tr.row-replacepage > td,
+.mep-grid tr.row-useblockcode > td     { background: var(--action-purple); }
+.mep-grid tr.row-insertscript > td     { background: var(--action-yellow); }
+.mep-grid tr.row-updatemetadata > td   { background: var(--action-green); }
 
 /* Grid footer */
 .mep-grid-footer {
