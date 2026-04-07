@@ -172,7 +172,7 @@ export class ManifestModel {
       };
 
       // Discover columns from first row keys, excluding fixed ones
-      const fixedCols = ['action', 'selector', 'page filter', 'pagefilter'];
+      const fixedCols = ['action', 'selector', 'page filter', 'pagefilter', 'page filter (optional)'];
       const allKeys = Object.keys(expData[0]);
       const expColNames = allKeys.filter((k) => !fixedCols.includes(k.toLowerCase()));
 
@@ -185,7 +185,7 @@ export class ManifestModel {
         return {
           action: getVal(row, 'action'),
           selector: getVal(row, 'selector'),
-          pageFilter: getVal(row, 'page filter'),
+          pageFilter: getVal(row, 'page filter') || getVal(row, 'page filter (optional)'),
           values,
         };
       });
