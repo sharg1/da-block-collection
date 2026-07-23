@@ -134,6 +134,12 @@ export function renderExperiencesTab(container, model) {
     // Body
     const tbody = document.createElement('tbody');
 
+    function clearDragIndicators() {
+      tbody.querySelectorAll('tr').forEach((row) => {
+        row.classList.remove('drag-insert-before', 'drag-insert-after');
+      });
+    }
+
     model.experiences.rows.forEach((row, rowIdx) => {
       const tr = document.createElement('tr');
 
@@ -145,26 +151,66 @@ export function renderExperiencesTab(container, model) {
       // Row number / drag handle
       const handleTd = document.createElement('td');
       handleTd.className = 'col-handle';
-      handleTd.textContent = rowIdx + 1;
-      handleTd.draggable = true;
-      handleTd.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', rowIdx);
-        tr.style.opacity = '0.4';
+
+      const handle = document.createElement('div');
+      handle.className = 'drag-handle';
+      handle.draggable = true;
+      handle.title = 'Drag to reorder';
+
+      const grip = document.createElement('span');
+      grip.className = 'drag-handle-grip';
+      grip.textContent = '⠿';
+      grip.setAttribute('aria-hidden', 'true');
+
+      const rowNum = document.createElement('span');
+      rowNum.textContent = rowIdx + 1;
+
+      handle.append(grip, rowNum);
+      handleTd.append(handle);
+
+      handle.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(rowIdx));
+        tr.classList.add('row-dragging');
       });
-      handleTd.addEventListener('dragend', () => { tr.style.opacity = '1'; });
+
+      handle.addEventListener('dragend', () => {
+        tr.classList.remove('row-dragging');
+        clearDragIndicators();
+      });
+
       tr.addEventListener('dragover', (e) => {
         e.preventDefault();
-        tr.style.borderTop = '2px solid var(--mep-primary)';
+        e.dataTransfer.dropEffect = 'move';
+
+        const rect = tr.getBoundingClientRect();
+        const isBottomHalf = (e.clientY - rect.top) > rect.height / 2;
+
+        clearDragIndicators();
+        tr.classList.add(isBottomHalf ? 'drag-insert-after' : 'drag-insert-before');
       });
-      tr.addEventListener('dragleave', () => { tr.style.borderTop = ''; });
+
+      tr.addEventListener('dragleave', (e) => {
+        if (!tr.contains(e.relatedTarget)) {
+          tr.classList.remove('drag-insert-before', 'drag-insert-after');
+        }
+      });
+
       tr.addEventListener('drop', (e) => {
         e.preventDefault();
-        tr.style.borderTop = '';
         const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
-        if (fromIdx !== rowIdx) {
-          model.moveRow(fromIdx, rowIdx);
-          render();
-        }
+        const isAfter = tr.classList.contains('drag-insert-after');
+        clearDragIndicators();
+
+        if (Number.isNaN(fromIdx) || fromIdx === rowIdx) return;
+
+        let toIdx = isAfter ? rowIdx + 1 : rowIdx;
+        // moveRow splices the row out first, which shifts every index
+        // after it down by one — compensate when dragging downward.
+        if (fromIdx < toIdx) toIdx -= 1;
+
+        model.moveRow(fromIdx, toIdx);
+        render();
       });
       tr.append(handleTd);
 
