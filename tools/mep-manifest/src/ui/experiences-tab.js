@@ -145,15 +145,32 @@ export function renderExperiencesTab(container, model) {
       // Row number / drag handle
       const handleTd = document.createElement('td');
       handleTd.className = 'col-handle';
-      handleTd.textContent = rowIdx + 1;
-      handleTd.draggable = true;
-      handleTd.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', rowIdx);
-        tr.style.opacity = '0.4';
+
+      const handle = document.createElement('div');
+      handle.className = 'drag-handle';
+      handle.draggable = true;
+      handle.title = 'Drag to reorder';
+
+      const grip = document.createElement('span');
+      grip.className = 'drag-handle-grip';
+      grip.textContent = '⠿';
+      grip.setAttribute('aria-hidden', 'true');
+
+      const rowNum = document.createElement('span');
+      rowNum.textContent = rowIdx + 1;
+
+      handle.append(grip, rowNum);
+      handleTd.append(handle);
+
+      handle.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(rowIdx));
+        tr.classList.add('row-dragging');
       });
-      handleTd.addEventListener('dragend', () => { tr.style.opacity = '1'; });
+      handle.addEventListener('dragend', () => { tr.classList.remove('row-dragging'); });
       tr.addEventListener('dragover', (e) => {
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
         tr.style.borderTop = '2px solid var(--mep-primary)';
       });
       tr.addEventListener('dragleave', () => { tr.style.borderTop = ''; });
