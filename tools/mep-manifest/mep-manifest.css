@@ -417,6 +417,15 @@ body {
   cursor: grabbing;
 }
 
+/* Drag insertion-line indicator */
+.mep-grid tr.drag-insert-before td {
+  box-shadow: inset 0 2px 0 0 var(--mep-primary);
+}
+
+.mep-grid tr.drag-insert-after td {
+  box-shadow: inset 0 -2px 0 0 var(--mep-primary);
+}
+
 /* Row delete */
 .mep-grid td.col-delete {
   width: 32px;
