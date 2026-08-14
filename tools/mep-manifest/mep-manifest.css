@@ -447,6 +447,29 @@ body {
   cursor: grabbing;
 }
 
+/* Row resize handle */
+.mep-row-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: row-resize;
+  user-select: none;
+  z-index: 2;
+}
+
+.mep-row-resize-handle:hover,
+.mep-row-resize-handle:active {
+  background: var(--mep-primary);
+  opacity: 0.4;
+}
+
+.mep-grid tr.row-resized > td {
+  height: var(--mep-row-height);
+  overflow: hidden;
+}
+
 /* Drag insertion-line indicator */
 .mep-grid tr.drag-insert-before td {
   box-shadow: inset 0 2px 0 0 var(--mep-primary);
@@ -486,6 +509,11 @@ body {
   align-items: flex-start;
   width: 100%;
   min-height: 36px;
+}
+
+.mep-grid tr.row-resized .cell-wrapper {
+  height: 100%;
+  overflow-y: auto;
 }
 
 /* Textarea cell input (Selector + Experience columns) */
