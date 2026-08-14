@@ -91,6 +91,12 @@ export class ManifestModel {
     this.emit();
   }
 
+  moveColumn(fromIdx, toIdx) {
+    const [col] = this.experiences.columns.splice(fromIdx, 1);
+    this.experiences.columns.splice(toIdx, 0, col);
+    this.emit();
+  }
+
   /* ---- Experience Rows ---- */
 
   addRow() {
