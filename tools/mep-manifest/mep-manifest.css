@@ -365,6 +365,36 @@ body {
   background: #4a90d9;
 }
 
+/* Column drag handle */
+.mep-grid th .col-drag-handle {
+  display: inline-flex;
+  cursor: grab;
+  margin-right: 4px;
+  opacity: 0.75;
+}
+
+.mep-grid th .col-drag-handle:hover {
+  opacity: 1;
+}
+
+.mep-grid th.col-dragging,
+.mep-grid td.col-dragging {
+  opacity: 0.4;
+}
+
+.mep-grid th.col-dragging .col-drag-handle {
+  cursor: grabbing;
+}
+
+/* Column insertion-line indicator */
+.mep-grid .col-insert-before {
+  box-shadow: inset 2px 0 0 0 var(--mep-primary);
+}
+
+.mep-grid .col-insert-after {
+  box-shadow: inset -2px 0 0 0 var(--mep-primary);
+}
+
 .mep-grid th.col-add {
   background: #f0f0f0;
   min-width: 40px;

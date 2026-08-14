@@ -105,6 +105,11 @@ export function renderExperiencesTab(container, model) {
     const table = document.createElement('table');
     table.className = 'mep-grid';
 
+    // Declared early (before thead/tbody are populated below) so the
+    // column-header drag handlers can reference it without triggering
+    // no-use-before-define — it's only populated once the "Body" section runs.
+    const tbody = document.createElement('tbody');
+
     // Header
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
@@ -114,9 +119,88 @@ export function renderExperiencesTab(container, model) {
     headerRow.append(createTh('Selector', 'col-selector', true));
     headerRow.append(createTh('Page Filter', 'col-page-filter', true));
 
-    model.experiences.columns.forEach((col) => {
+    // Fixed columns above occupy header/row positions 0-3; experience
+    // columns start at position 4 — used to find each column's cells
+    // (header th + every row's td) for drag indicator styling.
+    const FIXED_COL_COUNT = 4;
+
+    function getColumnCells(colIdx) {
+      const cellIdx = FIXED_COL_COUNT + colIdx;
+      const cells = [headerRow.children[cellIdx]];
+      tbody.querySelectorAll('tr').forEach((row) => {
+        cells.push(row.children[cellIdx]);
+      });
+      return cells;
+    }
+
+    function clearColumnDragIndicators() {
+      table.querySelectorAll('.col-insert-before, .col-insert-after').forEach((cell) => {
+        cell.classList.remove('col-insert-before', 'col-insert-after');
+      });
+    }
+
+    model.experiences.columns.forEach((col, colIdx) => {
       const isTarget = col.name.toLowerCase().startsWith('target');
-      headerRow.append(createTh(col.name, `col-experience${isTarget ? ' target' : ''}`, true));
+      const th = createTh(col.name, `col-experience${isTarget ? ' target' : ''}`, true);
+
+      const grip = document.createElement('span');
+      grip.className = 'col-drag-handle';
+      grip.textContent = '⠿';
+      grip.title = 'Drag to reorder column';
+      grip.setAttribute('aria-hidden', 'true');
+      grip.draggable = true;
+      th.prepend(grip);
+
+      grip.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/mep-column-index', String(colIdx));
+        getColumnCells(colIdx).forEach((cell) => cell.classList.add('col-dragging'));
+      });
+
+      grip.addEventListener('dragend', () => {
+        getColumnCells(colIdx).forEach((cell) => cell.classList.remove('col-dragging'));
+        clearColumnDragIndicators();
+      });
+
+      th.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        const rect = th.getBoundingClientRect();
+        const isRightHalf = (e.clientX - rect.left) > rect.width / 2;
+
+        clearColumnDragIndicators();
+        getColumnCells(colIdx).forEach((cell) => {
+          cell.classList.add(isRightHalf ? 'col-insert-after' : 'col-insert-before');
+        });
+      });
+
+      th.addEventListener('dragleave', (e) => {
+        if (!th.contains(e.relatedTarget)) {
+          getColumnCells(colIdx).forEach((cell) => {
+            cell.classList.remove('col-insert-before', 'col-insert-after');
+          });
+        }
+      });
+
+      th.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const fromIdx = parseInt(e.dataTransfer.getData('text/mep-column-index'), 10);
+        const isAfter = th.classList.contains('col-insert-after');
+        clearColumnDragIndicators();
+
+        if (Number.isNaN(fromIdx) || fromIdx === colIdx) return;
+
+        let toIdx = isAfter ? colIdx + 1 : colIdx;
+        // moveColumn splices the column out first, which shifts every
+        // index after it down by one — compensate when dragging right.
+        if (fromIdx < toIdx) toIdx -= 1;
+
+        model.moveColumn(fromIdx, toIdx);
+        render();
+      });
+
+      headerRow.append(th);
     });
 
     const addColTh = document.createElement('th');
@@ -132,7 +216,6 @@ export function renderExperiencesTab(container, model) {
     table.append(thead);
 
     // Body
-    const tbody = document.createElement('tbody');
 
     function clearDragIndicators() {
       tbody.querySelectorAll('tr').forEach((row) => {
