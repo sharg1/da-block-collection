@@ -1,4 +1,5 @@
 const DA_ADMIN = 'https://admin.da.live';
+const HLX_ADMIN = 'https://admin.hlx.page';
 
 let _token = '';
 
@@ -8,6 +9,14 @@ export function setToken(token) {
 
 function authHeaders(extra = {}) {
   return _token ? { Authorization: `Bearer ${_token}`, ...extra } : extra;
+}
+
+function hlxHeaders(extra = {}) {
+  return _token ? {
+    Authorization: `Bearer ${_token}`,
+    'x-content-source-authorization': `Bearer ${_token}`,
+    ...extra,
+  } : extra;
 }
 
 function buildSourceUrl(org, site, path) {
@@ -73,27 +82,27 @@ export async function saveManifest(org, site, path, data) {
 }
 
 /**
- * Preview a manifest (triggers DA preview).
- * MEP manifests are DA sheets, so EDS serves them at their `.json` path —
- * the extension must be preserved (unlike HTML documents).
+ * Preview a manifest (triggers Helix/EDS preview build).
+ * Uses the Helix Admin API (not DA Admin API) to trigger preview builds.
+ * Requires both Helix API auth and DA content-source auth headers.
  */
-export async function previewManifest(org, site, path) {
+export async function previewManifest(org, site, path, ref = 'main') {
   const sheetPath = path.endsWith('.json') ? path : `${path}.json`;
-  const url = `${DA_ADMIN}/preview/${org}/${site}/${sheetPath}`;
-  const resp = await fetch(url, { method: 'POST', headers: authHeaders() });
+  const url = `${HLX_ADMIN}/preview/${org}/${site}/${ref}/${sheetPath}`;
+  const resp = await fetch(url, { method: 'POST', headers: hlxHeaders() });
   if (!resp.ok) throw new Error(`Failed to preview: ${resp.status}`);
   return resp.json();
 }
 
 /**
- * Publish a manifest (triggers DA publish).
- * MEP manifests are DA sheets, so EDS serves them at their `.json` path —
- * the extension must be preserved (unlike HTML documents).
+ * Publish a manifest (triggers Helix/EDS publish to live).
+ * Uses the Helix Admin API (not DA Admin API) to trigger publish builds.
+ * Requires both Helix API auth and DA content-source auth headers.
  */
-export async function publishManifest(org, site, path) {
+export async function publishManifest(org, site, path, ref = 'main') {
   const sheetPath = path.endsWith('.json') ? path : `${path}.json`;
-  const url = `${DA_ADMIN}/live/${org}/${site}/${sheetPath}`;
-  const resp = await fetch(url, { method: 'POST', headers: authHeaders() });
+  const url = `${HLX_ADMIN}/live/${org}/${site}/${ref}/${sheetPath}`;
+  const resp = await fetch(url, { method: 'POST', headers: hlxHeaders() });
   if (!resp.ok) throw new Error(`Failed to publish: ${resp.status}`);
   return resp.json();
 }
