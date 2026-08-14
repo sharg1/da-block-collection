@@ -251,6 +251,30 @@ export function renderExperiencesTab(container, model) {
       handle.append(grip, rowNum);
       handleTd.append(handle);
 
+      // Row resize handle — drag the bottom edge to set an explicit row height.
+      const rowResizeHandle = document.createElement('span');
+      rowResizeHandle.className = 'mep-row-resize-handle';
+      rowResizeHandle.title = 'Drag to resize row';
+      rowResizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startY = e.clientY;
+        const startH = tr.getBoundingClientRect().height;
+
+        function onMove(me) {
+          const newH = Math.max(36, startH + (me.clientY - startY));
+          tr.style.setProperty('--mep-row-height', `${newH}px`);
+          tr.classList.add('row-resized');
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      handleTd.append(rowResizeHandle);
+
       handle.addEventListener('dragstart', (e) => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', String(rowIdx));
