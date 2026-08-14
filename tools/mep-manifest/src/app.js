@@ -152,8 +152,8 @@ async function handlePreview() {
   setStatus(statusBar, 'Generating preview…', '');
   try {
     await previewManifest(org, site, model.filePath);
-    const pagePath = model.filePath.replace(/\.[^/.]+$/, '');
-    const url = `https://main--${site}--${org}.aem.page/${pagePath}`;
+    const sheetPath = model.filePath.endsWith('.json') ? model.filePath : `${model.filePath}.json`;
+    const url = `https://main--${site}--${org}.aem.page/${sheetPath}`;
     setStatus(statusBar, 'Preview ready', 'saved');
     showToast('success', 'Preview generated', { url });
   } catch (err) {
@@ -176,8 +176,8 @@ async function handlePublish() {
   setStatus(statusBar, 'Publishing…', '');
   try {
     await publishManifest(org, site, model.filePath);
-    const pagePath = model.filePath.replace(/\.[^/.]+$/, '');
-    const url = `https://main--${site}--${org}.aem.live/${pagePath}`;
+    const sheetPath = model.filePath.endsWith('.json') ? model.filePath : `${model.filePath}.json`;
+    const url = `https://main--${site}--${org}.aem.live/${sheetPath}`;
     setStatus(statusBar, 'Published', 'saved');
     showToast('success', 'Published to live', { url });
   } catch (err) {

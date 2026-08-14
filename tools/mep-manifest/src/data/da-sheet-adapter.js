@@ -74,11 +74,12 @@ export async function saveManifest(org, site, path, data) {
 
 /**
  * Preview a manifest (triggers DA preview).
- * DA admin preview/live APIs operate on page paths (no file extension).
+ * MEP manifests are DA sheets, so EDS serves them at their `.json` path —
+ * the extension must be preserved (unlike HTML documents).
  */
 export async function previewManifest(org, site, path) {
-  const pagePath = path.replace(/\.[^/.]+$/, '');
-  const url = `${DA_ADMIN}/preview/${org}/${site}/${pagePath}`;
+  const sheetPath = path.endsWith('.json') ? path : `${path}.json`;
+  const url = `${DA_ADMIN}/preview/${org}/${site}/${sheetPath}`;
   const resp = await fetch(url, { method: 'POST', headers: authHeaders() });
   if (!resp.ok) throw new Error(`Failed to preview: ${resp.status}`);
   return resp.json();
@@ -86,11 +87,12 @@ export async function previewManifest(org, site, path) {
 
 /**
  * Publish a manifest (triggers DA publish).
- * DA admin preview/live APIs operate on page paths (no file extension).
+ * MEP manifests are DA sheets, so EDS serves them at their `.json` path —
+ * the extension must be preserved (unlike HTML documents).
  */
 export async function publishManifest(org, site, path) {
-  const pagePath = path.replace(/\.[^/.]+$/, '');
-  const url = `${DA_ADMIN}/live/${org}/${site}/${pagePath}`;
+  const sheetPath = path.endsWith('.json') ? path : `${path}.json`;
+  const url = `${DA_ADMIN}/live/${org}/${site}/${sheetPath}`;
   const resp = await fetch(url, { method: 'POST', headers: authHeaders() });
   if (!resp.ok) throw new Error(`Failed to publish: ${resp.status}`);
   return resp.json();
