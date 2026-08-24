@@ -200,6 +200,18 @@ export function renderExperiencesTab(container, model) {
         render();
       });
 
+      if (!col.isDefault) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'col-delete-header-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.title = 'Delete column';
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showDeleteColumnDialog(model, colIdx, render);
+        });
+        th.append(deleteBtn);
+      }
+
       headerRow.append(th);
     });
 
@@ -603,4 +615,49 @@ function showAddColumnDialog(model, refreshFn) {
   document.body.append(overlay);
 
   requestAnimationFrame(() => input.focus());
+}
+
+function showDeleteColumnDialog(model, colIdx, refreshFn) {
+  const col = model.experiences.columns[colIdx];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'mep-dialog-overlay';
+
+  const dialog = document.createElement('div');
+  dialog.className = 'mep-dialog';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Delete Column';
+
+  const message = document.createElement('p');
+  message.textContent = `Delete column "${col.name}"? All values in this column will be lost for every row.`;
+
+  const actions = document.createElement('div');
+  actions.className = 'mep-dialog-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'mep-btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'mep-btn mep-btn-danger';
+  deleteBtn.textContent = 'Delete';
+  deleteBtn.addEventListener('click', () => {
+    model.removeColumn(colIdx);
+    overlay.remove();
+    refreshFn();
+  });
+
+  document.addEventListener('keydown', function onKeydown(e) {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', onKeydown);
+    }
+  });
+
+  actions.append(cancelBtn, deleteBtn);
+  dialog.append(h3, message, actions);
+  overlay.append(dialog);
+  document.body.append(overlay);
 }
