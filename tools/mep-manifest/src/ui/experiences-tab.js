@@ -635,10 +635,20 @@ function showDeleteColumnDialog(model, colIdx, refreshFn) {
   const actions = document.createElement('div');
   actions.className = 'mep-dialog-actions';
 
+  function onKeydown(e) {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      document.removeEventListener('keydown', onKeydown);
+    }
+  }
+
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'mep-btn';
   cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => overlay.remove());
+  cancelBtn.addEventListener('click', () => {
+    overlay.remove();
+    document.removeEventListener('keydown', onKeydown);
+  });
 
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'mep-btn mep-btn-danger';
@@ -646,15 +656,11 @@ function showDeleteColumnDialog(model, colIdx, refreshFn) {
   deleteBtn.addEventListener('click', () => {
     model.removeColumn(colIdx);
     overlay.remove();
+    document.removeEventListener('keydown', onKeydown);
     refreshFn();
   });
 
-  document.addEventListener('keydown', function onKeydown(e) {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      document.removeEventListener('keydown', onKeydown);
-    }
-  });
+  document.addEventListener('keydown', onKeydown);
 
   actions.append(cancelBtn, deleteBtn);
   dialog.append(h3, message, actions);
