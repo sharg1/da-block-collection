@@ -521,6 +521,13 @@ function createInputCell(value, onChange) {
   return td;
 }
 
+function isDuplicateColumnName(model, name, excludeIdx = -1) {
+  const trimmed = name.trim().toLowerCase();
+  return model.experiences.columns.some(
+    (c, i) => i !== excludeIdx && c.name.toLowerCase() === trimmed,
+  );
+}
+
 function showAddColumnDialog(model, refreshFn) {
   const overlay = document.createElement('div');
   overlay.className = 'mep-dialog-overlay';
@@ -541,7 +548,10 @@ function showAddColumnDialog(model, refreshFn) {
   input.type = 'text';
   input.placeholder = 'e.g., all, target-returning-users';
   input.autofocus = true;
-  field.append(label, input);
+  const errorEl = document.createElement('div');
+  errorEl.className = 'mep-field-error';
+  errorEl.hidden = true;
+  field.append(label, input, errorEl);
 
   const actions = document.createElement('div');
   actions.className = 'mep-dialog-actions';
@@ -551,17 +561,36 @@ function showAddColumnDialog(model, refreshFn) {
   cancelBtn.textContent = 'Cancel';
   cancelBtn.addEventListener('click', () => overlay.remove());
 
+  function showError(message) {
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+    input.classList.add('mep-input-error');
+  }
+
+  function clearError() {
+    errorEl.hidden = true;
+    input.classList.remove('mep-input-error');
+  }
+
   const addBtn = document.createElement('button');
   addBtn.className = 'mep-btn mep-btn-primary';
   addBtn.textContent = 'Add';
   addBtn.addEventListener('click', () => {
     const name = input.value.trim();
-    if (name) {
-      model.addColumn(name);
-      overlay.remove();
-      refreshFn();
+    if (!name) {
+      showError('Column name is required.');
+      return;
     }
+    if (isDuplicateColumnName(model, name)) {
+      showError(`A column named "${name}" already exists.`);
+      return;
+    }
+    model.addColumn(name);
+    overlay.remove();
+    refreshFn();
   });
+
+  input.addEventListener('input', clearError);
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') addBtn.click();

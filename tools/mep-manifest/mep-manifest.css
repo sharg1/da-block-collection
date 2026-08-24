@@ -660,6 +660,16 @@ body {
   gap: 8px;
 }
 
+.mep-field-error {
+  color: var(--mep-danger);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.mep-input-error {
+  border-color: var(--mep-danger) !important;
+}
+
 /* Status bar */
 .mep-status {
   display: flex;
