@@ -73,8 +73,8 @@ export class ManifestModel {
 
   /* ---- Experience Columns ---- */
 
-  addColumn(name) {
-    this.experiences.columns.push({ name });
+  addColumn(name, isDefault = false) {
+    this.experiences.columns.push({ name, isDefault });
     // Add empty value for this column to all existing rows
     this.experiences.rows.forEach((row) => {
       row.values[name] = '';
@@ -84,11 +84,32 @@ export class ManifestModel {
 
   removeColumn(idx) {
     const col = this.experiences.columns[idx];
+    if (!col || col.isDefault) return;
+    if (this.experiences.columns.length <= 1) return;
     this.experiences.columns.splice(idx, 1);
     this.experiences.rows.forEach((row) => {
       delete row.values[col.name];
     });
     this.emit();
+  }
+
+  renameColumn(idx, newName) {
+    const col = this.experiences.columns[idx];
+    const trimmed = newName.trim();
+    if (!trimmed) return false;
+    const isDuplicate = this.experiences.columns.some(
+      (c, i) => i !== idx && c.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (isDuplicate) return false;
+    if (trimmed === col.name) return true;
+    const oldName = col.name;
+    col.name = trimmed;
+    this.experiences.rows.forEach((row) => {
+      row.values[trimmed] = row.values[oldName];
+      delete row.values[oldName];
+    });
+    this.emit();
+    return true;
   }
 
   moveColumn(fromIdx, toIdx) {
@@ -182,7 +203,7 @@ export class ManifestModel {
       const allKeys = Object.keys(expData[0]);
       const expColNames = allKeys.filter((k) => !fixedCols.includes(k.toLowerCase()));
 
-      this.experiences.columns = expColNames.map((name) => ({ name }));
+      this.experiences.columns = expColNames.map((name) => ({ name, isDefault: false }));
       this.experiences.rows = expData.map((row) => {
         const values = {};
         expColNames.forEach((name) => {
@@ -195,6 +216,24 @@ export class ManifestModel {
           values,
         };
       });
+
+      // Resolve the protected "default" column: prefer the persisted
+      // marker, fall back to a column literally named "all" (manifests
+      // saved before this field existed), then to the first column so
+      // the grid is never left without one.
+      const defaultEntry = infoData.find(
+        (row) => (row.Key || '').toLowerCase().replace(/\s+/g, '') === 'default-column',
+      );
+      let defaultCol = defaultEntry
+        ? this.experiences.columns.find((c) => c.name === defaultEntry.Value)
+        : null;
+      if (!defaultCol) {
+        defaultCol = this.experiences.columns.find((c) => c.name.toLowerCase() === 'all');
+      }
+      if (!defaultCol) {
+        [defaultCol] = this.experiences.columns;
+      }
+      if (defaultCol) defaultCol.isDefault = true;
     }
 
     this.dirty = false;
@@ -204,10 +243,12 @@ export class ManifestModel {
    * Convert to DA multi-sheet JSON format for saving.
    */
   toSheet() {
+    const defaultCol = this.experiences.columns.find((col) => col.isDefault);
     const infoData = [
       { Key: 'manifest-type', Value: this.info.type },
       { Key: 'execution-order', Value: this.info.executionOrder },
       { Key: 'override-name', Value: this.info.overrideName },
+      { Key: 'default-column', Value: defaultCol ? defaultCol.name : '' },
     ];
 
     const placeholderData = this.placeholders.map((ph) => ({
@@ -261,7 +302,7 @@ export class ManifestModel {
    */
   static createNew() {
     const model = new ManifestModel();
-    model.addColumn('all');
+    model.addColumn('all', true);
     model.addRow();
     return model;
   }
