@@ -141,7 +141,17 @@ export function renderExperiencesTab(container, model) {
 
     model.experiences.columns.forEach((col, colIdx) => {
       const isTarget = col.name.toLowerCase().startsWith('target');
-      const th = createTh(col.name, `col-experience${isTarget ? ' target' : ''}`, true);
+      const th = createTh('', `col-experience${isTarget ? ' target' : ''}`, true);
+
+      const colNameLabel = document.createElement('span');
+      colNameLabel.className = 'col-name-label';
+      colNameLabel.textContent = col.name;
+      colNameLabel.title = 'Double-click to rename';
+      colNameLabel.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        showRenameColumnDialog(model, colIdx, render);
+      });
+      th.prepend(colNameLabel);
 
       const grip = document.createElement('span');
       grip.className = 'col-drag-handle';
@@ -666,4 +676,87 @@ function showDeleteColumnDialog(model, colIdx, refreshFn) {
   dialog.append(h3, message, actions);
   overlay.append(dialog);
   document.body.append(overlay);
+}
+
+function showRenameColumnDialog(model, colIdx, refreshFn) {
+  const col = model.experiences.columns[colIdx];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'mep-dialog-overlay';
+
+  const dialog = document.createElement('div');
+  dialog.className = 'mep-dialog';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Rename Column';
+
+  const field = document.createElement('div');
+  field.className = 'mep-field';
+  const label = document.createElement('label');
+  label.className = 'mep-field-label';
+  label.textContent = 'Column Name';
+  const input = document.createElement('input');
+  input.className = 'mep-input';
+  input.type = 'text';
+  input.value = col.name;
+  input.autofocus = true;
+  const errorEl = document.createElement('div');
+  errorEl.className = 'mep-field-error';
+  errorEl.hidden = true;
+  field.append(label, input, errorEl);
+
+  function showError(message) {
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+    input.classList.add('mep-input-error');
+  }
+
+  function clearError() {
+    errorEl.hidden = true;
+    input.classList.remove('mep-input-error');
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'mep-dialog-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'mep-btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'mep-btn mep-btn-primary';
+  saveBtn.textContent = 'Save';
+  saveBtn.addEventListener('click', () => {
+    const name = input.value.trim();
+    if (!name) {
+      showError('Column name is required.');
+      return;
+    }
+    if (isDuplicateColumnName(model, name, colIdx)) {
+      showError(`A column named "${name}" already exists.`);
+      return;
+    }
+    const ok = model.renameColumn(colIdx, name);
+    if (!ok) {
+      showError('Could not rename this column.');
+      return;
+    }
+    overlay.remove();
+    refreshFn();
+  });
+
+  input.addEventListener('input', clearError);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveBtn.click();
+    if (e.key === 'Escape') overlay.remove();
+  });
+
+  actions.append(cancelBtn, saveBtn);
+  dialog.append(h3, field, actions);
+  overlay.append(dialog);
+  document.body.append(overlay);
+
+  requestAnimationFrame(() => { input.focus(); input.select(); });
 }
