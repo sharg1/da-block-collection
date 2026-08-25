@@ -1018,9 +1018,17 @@ body {
   background: var(--mep-danger);
 }
 
+.mep-toast-progress {
+  background: var(--mep-primary);
+}
+
 @keyframes mep-toast-in {
   from { opacity: 0; transform: translate(-50%, 12px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes mep-toast-spin {
+  to { transform: rotate(360deg); }
 }
 
 .mep-toast-head {
@@ -1042,6 +1050,12 @@ body {
   font-size: 11px;
   font-weight: 700;
   color: #fff;
+}
+
+.mep-toast-icon-spinner {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: mep-toast-spin 0.7s linear infinite;
 }
 
 .mep-toast-title {

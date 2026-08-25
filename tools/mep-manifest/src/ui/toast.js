@@ -1,8 +1,10 @@
 /**
- * Shows a result toast notification anchored below the toolbar.
- * Auto-dismisses after 8 seconds. Call dismiss() to remove early.
+ * Shows a toast notification anchored at the bottom-center of the screen.
+ * Auto-dismisses after a type-dependent delay (sooner for success, longer
+ * for error/progress, since "progress" is normally superseded by a
+ * follow-up success/error toast before its own timeout ever fires).
  *
- * @param {'success'|'error'} type
+ * @param {'success'|'error'|'progress'} type
  * @param {string} title  — headline text
  * @param {string} [url]  — optional URL to show with Open + Copy buttons
  * @param {string} [detail] — optional secondary line (error message etc.)
@@ -19,8 +21,12 @@ export function showToast(type, title, { url, detail } = {}) {
   head.className = 'mep-toast-head';
 
   const icon = document.createElement('span');
-  icon.className = 'mep-toast-icon';
-  icon.textContent = type === 'success' ? '✓' : '✕';
+  if (type === 'progress') {
+    icon.className = 'mep-toast-icon mep-toast-icon-spinner';
+  } else {
+    icon.className = 'mep-toast-icon';
+    icon.textContent = type === 'success' ? '✓' : '✕';
+  }
 
   const titleEl = document.createElement('span');
   titleEl.className = 'mep-toast-title';
@@ -82,8 +88,11 @@ export function showToast(type, title, { url, detail } = {}) {
 
   document.body.append(toast);
 
-  // Auto-dismiss after 8s for success, 12s for errors
-  const ttl = type === 'success' ? 8000 : 12000;
+  // Auto-dismiss after 8s for success, 12s for errors. Progress toasts get
+  // a generous 20s fallback — they're normally replaced by a follow-up
+  // success/error toast well before that, this just guards against a code
+  // path that never calls showToast() again.
+  const ttl = { success: 8000, error: 12000, progress: 20000 }[type] ?? 12000;
   const timer = setTimeout(() => toast.remove(), ttl);
   closeBtn.addEventListener('click', () => clearTimeout(timer));
 
