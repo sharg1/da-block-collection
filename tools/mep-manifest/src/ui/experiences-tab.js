@@ -52,7 +52,7 @@ export function renderExperiencesTab(container, model) {
   MANIFEST_TYPES.forEach((t) => {
     const opt = document.createElement('option');
     opt.value = t;
-    opt.textContent = t;
+    opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
     if (t === model.info.type) opt.selected = true;
     typeSelect.append(opt);
   });
