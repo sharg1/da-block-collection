@@ -96,6 +96,13 @@ export function renderExperiencesTab(container, model) {
 
   // ---- Grid (rebuilt on each render()) ----
   function render() {
+    // Preserve scroll position before re-rendering
+    let savedScrollLeft = 0;
+    const existingGridWrapper = wrap.querySelector('.mep-grid-wrapper');
+    if (existingGridWrapper) {
+      savedScrollLeft = existingGridWrapper.scrollLeft;
+    }
+
     // Remove everything after the info bar
     while (wrap.lastChild !== infoBar) wrap.removeChild(wrap.lastChild);
 
@@ -382,6 +389,9 @@ export function renderExperiencesTab(container, model) {
     table.append(tbody);
     gridWrapper.append(table);
     wrap.append(gridWrapper);
+
+    // Restore scroll position
+    gridWrapper.scrollLeft = savedScrollLeft;
 
     // Add row button
     const footer = document.createElement('div');
