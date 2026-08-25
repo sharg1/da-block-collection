@@ -135,6 +135,16 @@ body {
   opacity: 0.85;
 }
 
+.mep-btn-warning {
+  background: var(--mep-warning);
+  color: #fff;
+  border-color: var(--mep-warning);
+}
+
+.mep-btn-warning:hover {
+  opacity: 0.85;
+}
+
 .mep-btn-icon {
   width: 32px;
   padding: 0;

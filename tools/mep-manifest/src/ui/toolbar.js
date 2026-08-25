@@ -3,7 +3,7 @@
  * Returns { toolbar, previewBtn, publishBtn } so callers can toggle loading state.
  */
 export function renderToolbar(container, {
-  onSave, onPreview, onPublish, onNew, onClose, model,
+  onSave, onPreview, onPublish, onNew, onClose, onMigrate, model,
 }) {
   const toolbar = document.createElement('div');
   toolbar.className = 'mep-toolbar';
@@ -26,16 +26,20 @@ export function renderToolbar(container, {
 
   const newBtn = createButton('+ New', 'mep-btn', onNew);
   const saveBtn = createButton('Save', 'mep-btn', onSave);
+  const migrateBtn = createButton('Migrate', 'mep-btn mep-btn-warning', onMigrate);
+  migrateBtn.title = 'This manifest uses the older pre-migration schema — click to re-save it in the current format.';
+  migrateBtn.hidden = !model.isLegacyFormat;
   const previewBtn = createButton('Preview', 'mep-btn', onPreview);
   const publishBtn = createButton('Publish', 'mep-btn mep-btn-primary', onPublish);
 
-  right.append(newBtn, saveBtn, previewBtn, publishBtn);
+  right.append(newBtn, saveBtn, migrateBtn, previewBtn, publishBtn);
   toolbar.append(left, right);
   container.append(toolbar);
 
   model.onChange(() => {
     const path = model.filePath || 'New Manifest';
     title.textContent = model.dirty ? `${path} *` : path;
+    migrateBtn.hidden = !model.isLegacyFormat;
   });
 
   return { toolbar, previewBtn, publishBtn };

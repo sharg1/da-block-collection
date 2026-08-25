@@ -135,8 +135,19 @@ async function handleSave() {
     model.markClean();
     model.emit();
     setStatus(statusBar, 'Saved', 'saved');
+    return true;
   } catch (err) {
     setStatus(statusBar, `Save failed: ${err.message}`, 'unsaved');
+    return false;
+  }
+}
+
+async function handleMigrate() {
+  const ok = await handleSave();
+  if (ok) {
+    model.isLegacyFormat = false;
+    model.emit();
+    showToast('success', 'Manifest migrated to the current schema');
   }
 }
 
@@ -242,6 +253,7 @@ function renderEditor() {
     onPublish: handlePublish,
     onNew: () => handleNew(currentFolder),
     onClose: handleClose,
+    onMigrate: handleMigrate,
     model,
   }));
 

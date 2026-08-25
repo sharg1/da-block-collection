@@ -36,6 +36,10 @@ export class ManifestModel {
     this.dirty = false;
     this.listeners = [];
     this.filePath = '';
+    // True when this manifest was loaded from the old pre-migration DA
+    // schema (capitalized Action/Selector/Key/Value, no columns array) —
+    // drives the "Migrate" affordance in the toolbar. Not persisted.
+    this.isLegacyFormat = false;
   }
 
   onChange(fn) {
@@ -174,6 +178,11 @@ export class ManifestModel {
    */
   fromSheet(sheetData) {
     if (!sheetData) return;
+
+    // The current schema always writes an explicit columns array on every
+    // sheet; the old pre-migration DA schema never did. Its absence is
+    // what flags a manifest as needing a "Migrate" pass.
+    this.isLegacyFormat = !Array.isArray(sheetData.experiences?.columns);
 
     // Load info
     const infoData = sheetData.info?.data || sheetData[':names']?.includes('info')
