@@ -28,6 +28,10 @@
   --action-yellow-border: #f9ab00;
   --action-green: #e6f4ea;
   --action-green-border: #34a853;
+  --action-orange: #fce8d6;
+  --action-orange-border: #e8710a;
+  --action-gray: #f1f3f4;
+  --action-gray-border: #5f6368;
 }
 
 * {
@@ -638,10 +642,10 @@ body {
 .mep-grid td.action-remove          { border-left: 3px solid var(--action-remove-border); }
 .mep-grid td.action-replace,
 .mep-grid td.action-insertbefore,
-.mep-grid td.action-insertafter,
+.mep-grid td.action-insertafter     { border-left: 3px solid var(--action-blue-border); }
 .mep-grid td.action-prependtosection,
-.mep-grid td.action-appendtosection { border-left: 3px solid var(--action-blue-border); }
-.mep-grid td.action-replacepage,
+.mep-grid td.action-appendtosection { border-left: 3px solid var(--action-orange-border); }
+.mep-grid td.action-replacepage     { border-left: 3px solid var(--action-gray-border); }
 .mep-grid td.action-useblockcode    { border-left: 3px solid var(--action-purple-border); }
 .mep-grid td.action-insertscript    { border-left: 3px solid var(--action-yellow-border); }
 .mep-grid td.action-updatemetadata  { border-left: 3px solid var(--action-green-border); }
@@ -650,10 +654,10 @@ body {
 .mep-grid tr.row-remove > td                                    { background: var(--action-remove); }
 .mep-grid tr.row-replace > td,
 .mep-grid tr.row-insertbefore > td,
-.mep-grid tr.row-insertafter > td,
+.mep-grid tr.row-insertafter > td      { background: var(--action-blue); }
 .mep-grid tr.row-prependtosection > td,
-.mep-grid tr.row-appendtosection > td  { background: var(--action-blue); }
-.mep-grid tr.row-replacepage > td,
+.mep-grid tr.row-appendtosection > td  { background: var(--action-orange); }
+.mep-grid tr.row-replacepage > td      { background: var(--action-gray); }
 .mep-grid tr.row-useblockcode > td     { background: var(--action-purple); }
 .mep-grid tr.row-insertscript > td     { background: var(--action-yellow); }
 .mep-grid tr.row-updatemetadata > td   { background: var(--action-green); }
