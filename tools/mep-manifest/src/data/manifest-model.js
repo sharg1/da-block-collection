@@ -179,10 +179,16 @@ export class ManifestModel {
   fromSheet(sheetData) {
     if (!sheetData) return;
 
-    // The current schema always writes an explicit columns array on every
-    // sheet; the old pre-migration DA schema never did. Its absence is
-    // what flags a manifest as needing a "Migrate" pass.
-    this.isLegacyFormat = !Array.isArray(sheetData.experiences?.columns);
+    // Detect the old pre-migration DA schema by the actual row data casing
+    // (capitalized "Key"/"Action"), not by a "columns" array — DA's Admin
+    // API does not reliably round-trip metadata fields like columns, but it
+    // always round-trips the row data itself, which is what this checks.
+    const firstInfoRow = sheetData.info?.data?.[0];
+    const firstExpRow = sheetData.experiences?.data?.[0];
+    this.isLegacyFormat = (
+      (!!firstInfoRow && Object.prototype.hasOwnProperty.call(firstInfoRow, 'Key'))
+      || (!!firstExpRow && Object.prototype.hasOwnProperty.call(firstExpRow, 'Action'))
+    );
 
     // Load info
     const infoData = sheetData.info?.data || sheetData[':names']?.includes('info')
