@@ -158,13 +158,18 @@ export class ManifestModel {
   /* ---- Serialization: to/from DA sheet format ---- */
 
   /**
-   * Load from DA multi-sheet JSON format.
+   * Load from DA multi-sheet JSON format. Matches the schema produced by the
+   * legacy SharePoint-based tool: lowercase "key"/"value" on info and
+   * placeholders, lowercase "action"/"selector"/"page filter (optional)" on
+   * experiences. Also accepts the older capitalized "Key"/"Value"/"Action"/
+   * "Selector"/"Page Filter" keys this tool itself used to write, so
+   * previously-saved manifests keep loading correctly.
    * Expected structure:
    * {
    *   ":names": ["experiences", "info", "placeholders"],
-   *   "info": { "data": [{ "Key": "...", "Value": "..." }, ...] },
-   *   "placeholders": { "data": [{ "Key": "...", "Value": "..." }, ...] },
-   *   "experiences": { "data": [{ "Action": "...", "Selector": "...", ... }, ...] }
+   *   "info": { "data": [{ "key": "...", "value": "..." }, ...] },
+   *   "placeholders": { "data": [{ "key": "...", "value": "..." }, ...] },
+   *   "experiences": { "data": [{ "action": "...", "selector": "...", ... }, ...] }
    * }
    */
   fromSheet(sheetData) {
@@ -175,17 +180,19 @@ export class ManifestModel {
       ? (sheetData.info?.data || [])
       : [];
     infoData.forEach((row) => {
-      const key = (row.Key || '').toLowerCase().replace(/\s+/g, '');
-      if (key === 'manifesttype' || key === 'manifest-type') this.info.type = row.Value || 'personalization';
-      if (key === 'executionorder' || key === 'execution-order') this.info.executionOrder = row.Value || 'Normal';
-      if (key === 'overridename' || key === 'override-name') this.info.overrideName = row.Value || '';
+      const rawKey = row.Key ?? row.key ?? '';
+      const rawValue = row.Value ?? row.value ?? '';
+      const key = rawKey.toLowerCase().replace(/\s+/g, '');
+      if (key === 'manifesttype' || key === 'manifest-type') this.info.type = rawValue || 'personalization';
+      if (key === 'executionorder' || key === 'execution-order' || key === 'manifest-execution-order') this.info.executionOrder = rawValue || 'Normal';
+      if (key === 'overridename' || key === 'override-name' || key === 'manifest-override-name') this.info.overrideName = rawValue || '';
     });
 
     // Load placeholders
     const phData = sheetData.placeholders?.data || [];
     this.placeholders = phData.map((row) => ({
-      key: row.Key || '',
-      value: row.Value || '',
+      key: row.Key ?? row.key ?? '',
+      value: row.Value ?? row.value ?? '',
     }));
 
     // Load experiences
@@ -221,11 +228,13 @@ export class ManifestModel {
       // marker, fall back to a column literally named "all" (manifests
       // saved before this field existed), then to the first column so
       // the grid is never left without one.
-      const defaultEntry = infoData.find(
-        (row) => (row.Key || '').toLowerCase().replace(/\s+/g, '') === 'default-column',
-      );
+      const defaultEntry = infoData.find((row) => {
+        const k = (row.Key ?? row.key ?? '').toLowerCase().replace(/\s+/g, '');
+        return k === 'default-column' || k === 'manifest-default-column';
+      });
+      const defaultEntryValue = defaultEntry ? (defaultEntry.Value ?? defaultEntry.value) : null;
       let defaultCol = defaultEntry
-        ? this.experiences.columns.find((c) => c.name === defaultEntry.Value)
+        ? this.experiences.columns.find((c) => c.name === defaultEntryValue)
         : null;
       if (!defaultCol) {
         defaultCol = this.experiences.columns.find((c) => c.name.toLowerCase() === 'all');
@@ -245,22 +254,22 @@ export class ManifestModel {
   toSheet() {
     const defaultCol = this.experiences.columns.find((col) => col.isDefault);
     const infoData = [
-      { Key: 'manifest-type', Value: this.info.type },
-      { Key: 'execution-order', Value: this.info.executionOrder },
-      { Key: 'override-name', Value: this.info.overrideName },
-      { Key: 'default-column', Value: defaultCol ? defaultCol.name : '' },
+      { key: 'manifest-type', value: this.info.type },
+      { key: 'manifest-override-name', value: this.info.overrideName },
+      { key: 'manifest-execution-order', value: this.info.executionOrder },
+      { key: 'manifest-default-column', value: defaultCol ? defaultCol.name : '' },
     ];
 
     const placeholderData = this.placeholders.map((ph) => ({
-      Key: ph.key,
-      Value: ph.value,
+      key: ph.key,
+      value: ph.value,
     }));
 
     const expData = this.experiences.rows.map((row) => {
       const obj = {
-        Action: row.action,
-        Selector: row.selector,
-        'Page Filter': row.pageFilter,
+        action: row.action,
+        selector: row.selector,
+        'page filter (optional)': row.pageFilter,
       };
       this.experiences.columns.forEach((col) => {
         obj[col.name] = row.values[col.name] || '';
@@ -277,18 +286,21 @@ export class ManifestModel {
         offset: 0,
         limit: expData.length,
         data: expData,
+        columns: ['action', 'selector', 'page filter (optional)', ...this.experiences.columns.map((col) => col.name)],
       },
       info: {
         total: infoData.length,
         offset: 0,
         limit: infoData.length,
         data: infoData,
+        columns: ['key', 'value'],
       },
       placeholders: {
         total: placeholderData.length,
         offset: 0,
         limit: placeholderData.length,
         data: placeholderData,
+        columns: ['key', 'value'],
       },
     };
   }
