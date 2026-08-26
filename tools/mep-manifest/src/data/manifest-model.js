@@ -51,6 +51,16 @@ export class ManifestModel {
     this.listeners.forEach((fn) => fn(this));
   }
 
+  /**
+   * Notifies listeners without marking the model dirty — for refreshing
+   * the UI after something that isn't a user edit (e.g. after a save, or
+   * after clearing a UI-only flag like isLegacyFormat). Using emit() here
+   * would immediately re-dirty a model that was just markClean()'d.
+   */
+  notify() {
+    this.listeners.forEach((fn) => fn(this));
+  }
+
   /* ---- Info ---- */
 
   setInfo(key, value) {

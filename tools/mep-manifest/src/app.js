@@ -139,7 +139,7 @@ async function saveModel() {
     setStatus(statusBar, 'Saving...', '');
     await saveManifest(org, site, model.filePath, sheetData);
     model.markClean();
-    model.emit();
+    model.notify();
     setStatus(statusBar, 'Saved', 'saved');
     return true;
   } catch (err) {
@@ -163,7 +163,7 @@ async function handleMigrate() {
   const ok = await handleSave();
   if (ok) {
     model.isLegacyFormat = false;
-    model.emit();
+    model.notify();
     showToast('success', 'Manifest migrated to the current schema');
   }
 }
