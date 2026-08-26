@@ -90,6 +90,10 @@ body {
 }
 
 /* Buttons */
+.mep-btn[hidden] {
+  display: none;
+}
+
 .mep-btn {
   display: inline-flex;
   align-items: center;
