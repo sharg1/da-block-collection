@@ -331,6 +331,10 @@ export class ManifestModel {
     const model = new ManifestModel();
     model.addColumn('all', true);
     model.addRow();
+    // addColumn/addRow mark the model dirty as a side effect, but this
+    // initial scaffolding isn't a user edit — a brand-new, untouched
+    // manifest shouldn't trip "Discard unsaved changes?" prompts.
+    model.markClean();
     return model;
   }
 }
