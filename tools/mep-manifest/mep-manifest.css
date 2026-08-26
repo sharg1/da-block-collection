@@ -90,6 +90,10 @@ body {
 }
 
 /* Buttons */
+.mep-btn[hidden] {
+  display: none;
+}
+
 .mep-btn {
   display: inline-flex;
   align-items: center;
@@ -1000,64 +1004,84 @@ body {
 /* Toast notification */
 .mep-toast {
   position: fixed;
-  top: calc(var(--mep-toolbar-height) + 8px);
-  right: 16px;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 200;
   min-width: 320px;
-  max-width: 480px;
-  background: var(--mep-surface);
+  max-width: 600px;
+  background: var(--mep-success);
+  color: #fff;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  border-left: 4px solid var(--mep-success);
-  padding: 12px 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  padding: 14px 16px;
   animation: mep-toast-in 0.2s ease;
 }
 
 .mep-toast-error {
-  border-left-color: var(--mep-danger);
+  background: var(--mep-danger);
+}
+
+.mep-toast-progress {
+  background: var(--mep-primary);
 }
 
 @keyframes mep-toast-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes mep-toast-spin {
+  to { transform: rotate(360deg); }
 }
 
 .mep-toast-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 4px;
 }
 
 .mep-toast-icon {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--mep-success);
+  color: #fff;
 }
 
-.mep-toast-error .mep-toast-icon {
-  color: var(--mep-danger);
+.mep-toast-icon-spinner {
+  border-color: rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: mep-toast-spin 0.7s linear infinite;
 }
 
 .mep-toast-title {
   flex: 1;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--mep-text);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
 }
 
 .mep-toast-close {
   background: none;
   border: none;
   font-size: 18px;
-  color: var(--mep-text-secondary);
+  color: #fff;
+  opacity: 0.85;
   cursor: pointer;
   line-height: 1;
   padding: 0 2px;
 }
 
 .mep-toast-close:hover {
-  color: var(--mep-text);
+  opacity: 1;
 }
 
 .mep-toast-url-row {
@@ -1067,7 +1091,7 @@ body {
 
 .mep-toast-url {
   font-size: 11px;
-  color: var(--mep-primary);
+  color: rgba(255, 255, 255, 0.9);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1085,11 +1109,28 @@ body {
   padding: 0 10px;
   font-size: 12px;
   text-decoration: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.mep-toast-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.mep-toast-btn.mep-btn-primary {
+  background: #fff;
+  color: var(--mep-text);
+  border-color: #fff;
+}
+
+.mep-toast-btn.mep-btn-primary:hover {
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .mep-toast-detail {
   font-size: 12px;
-  color: var(--mep-danger);
+  color: rgba(255, 255, 255, 0.9);
   margin-top: 4px;
 }
 

@@ -125,7 +125,13 @@ function showFileBrowser() {
 
 /* ---- Editor actions ---- */
 
-async function handleSave() {
+/**
+ * Saves the current model to DA without any toast — the toast lifecycle
+ * belongs to whichever button action (Save, Preview, Publish) triggered
+ * this, since Preview/Publish also save first as an internal step and
+ * shouldn't flash their own separate "Saving…" toast on top of that.
+ */
+async function saveModel() {
   const { org, site } = getOrgSite();
   const sheetData = model.toSheet();
 
@@ -140,6 +146,17 @@ async function handleSave() {
     setStatus(statusBar, `Save failed: ${err.message}`, 'unsaved');
     return false;
   }
+}
+
+async function handleSave() {
+  showToast('progress', 'Saving…');
+  const ok = await saveModel();
+  if (ok) {
+    showToast('success', 'Manifest saved');
+  } else {
+    showToast('error', 'Save failed');
+  }
+  return ok;
 }
 
 async function handleMigrate() {
@@ -157,10 +174,11 @@ async function handlePreview() {
     alert('Please save the manifest first.');
     return;
   }
-  await handleSave();
+  await saveModel();
   const { org, site } = getOrgSite();
   setButtonLoading(previewBtn, true, 'Previewing…');
   setStatus(statusBar, 'Generating preview…', '');
+  showToast('progress', 'Generating preview…');
   try {
     await previewManifest(org, site, model.filePath);
     const sheetPath = model.filePath.endsWith('.json') ? model.filePath : `${model.filePath}.json`;
@@ -181,10 +199,11 @@ async function handlePublish() {
     alert('Please save the manifest first.');
     return;
   }
-  await handleSave();
+  await saveModel();
   const { org, site } = getOrgSite();
   setButtonLoading(publishBtn, true, 'Publishing…');
   setStatus(statusBar, 'Publishing…', '');
+  showToast('progress', 'Publishing…');
   try {
     await publishManifest(org, site, model.filePath);
     const sheetPath = model.filePath.endsWith('.json') ? model.filePath : `${model.filePath}.json`;
