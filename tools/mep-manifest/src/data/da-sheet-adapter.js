@@ -106,3 +106,42 @@ export async function publishManifest(org, site, path, ref = 'main') {
   if (!resp.ok) throw new Error(`Failed to publish: ${resp.status}`);
   return resp.json();
 }
+
+// Conventional location of the optional extra-actions config sheet, relative
+// to the site root. Authors edit this as a normal DA sheet to add dropdown
+// options without a code deploy.
+const ACTIONS_CONFIG_PATH = 'tools/mep-manifest/actions.json';
+
+/**
+ * Pull the row array out of a DA sheet JSON, tolerating both the single-sheet
+ * shape ({ data: [...] }) and the multi-sheet shape ({ ':names': [...],
+ * <name>: { data: [...] } }) — mirrors the tolerance in ManifestModel.fromSheet.
+ */
+function extractSheetRows(json) {
+  if (!json || typeof json !== 'object') return [];
+  if (Array.isArray(json.data)) return json.data;
+  if (Array.isArray(json[':names']) && json[':names'].length > 0) {
+    const first = json[':names'][0];
+    if (first && Array.isArray(json[first]?.data)) return json[first].data;
+  }
+  return [];
+}
+
+/**
+ * Load the optional extra-actions config sheet from DA. Purely additive — any
+ * failure (missing sheet, network error, malformed JSON) resolves to [] so the
+ * tool falls back to the built-in action list and keeps working.
+ */
+export async function fetchActionsConfig(org, site) {
+  try {
+    const url = buildSourceUrl(org, site, ACTIONS_CONFIG_PATH);
+    const resp = await fetch(url, { headers: authHeaders() });
+    if (!resp.ok) return [];
+    const json = await resp.json();
+    return extractSheetRows(json);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('MEP: could not load actions config sheet', e);
+    return [];
+  }
+}
