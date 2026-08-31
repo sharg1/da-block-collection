@@ -304,6 +304,16 @@ body {
 }
 
 /* Experiences Grid */
+/* Make the Experiences tab a flex column so the info bar stays pinned and the
+   grid wrapper becomes the internal scroll container. This gives the wrapper a
+   bounded height, which is what lets the sticky header row (thead th) freeze in
+   place while the rows scroll underneath — like Excel's "freeze first row". */
+#tab-experiences {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .mep-grid-wrapper {
   overflow: auto;
   flex: 1;
@@ -363,6 +373,12 @@ body {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+/* The "#" row-handle header cell has no color of its own; give it an opaque
+   background so rows don't show through it once the header row is frozen. */
+.mep-grid th.col-handle {
+  background: #f0f0f0;
 }
 
 .mep-grid th.col-action {
