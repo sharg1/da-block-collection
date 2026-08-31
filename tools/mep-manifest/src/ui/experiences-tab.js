@@ -122,9 +122,9 @@ export function renderExperiencesTab(container, model) {
     const headerRow = document.createElement('tr');
 
     headerRow.append(createTh('#', 'col-handle'));
-    headerRow.append(createTh('Action', 'col-action', true));
-    headerRow.append(createTh('Selector', 'col-selector', true));
-    headerRow.append(createTh('Page Filter', 'col-page-filter', true));
+    headerRow.append(createTh('Action', 'col-action', true, 'action', model));
+    headerRow.append(createTh('Selector', 'col-selector', true, 'selector', model));
+    headerRow.append(createTh('Page Filter', 'col-page-filter', true, 'pageFilter', model));
 
     // Fixed columns above occupy header/row positions 0-3; experience
     // columns start at position 4 — used to find each column's cells
@@ -148,7 +148,7 @@ export function renderExperiencesTab(container, model) {
 
     model.experiences.columns.forEach((col, colIdx) => {
       const isTarget = col.name.toLowerCase().startsWith('target');
-      const th = createTh('', `col-experience${isTarget ? ' target' : ''}`, true);
+      const th = createTh('', `col-experience${isTarget ? ' target' : ''}`, true, col.name, model);
 
       const colNameLabel = document.createElement('span');
       colNameLabel.className = 'col-name-label';
@@ -255,6 +255,13 @@ export function renderExperiencesTab(container, model) {
     model.experiences.rows.forEach((row, rowIdx) => {
       const tr = document.createElement('tr');
 
+      // Reapply any persisted row height so a rebuilt table keeps the size.
+      const savedHeight = model.experiences.rowHeights[rowIdx];
+      if (Number.isFinite(savedHeight)) {
+        tr.style.setProperty('--mep-row-height', `${savedHeight}px`);
+        tr.classList.add('row-resized');
+      }
+
       // Apply row background color class if action is set
       if (row.action && ROW_CSS_MAP[row.action]) {
         tr.classList.add(ROW_CSS_MAP[row.action]);
@@ -289,15 +296,17 @@ export function renderExperiencesTab(container, model) {
         e.stopPropagation();
         const startY = e.clientY;
         const startH = tr.getBoundingClientRect().height;
+        let newH = startH;
 
         function onMove(me) {
-          const newH = Math.max(36, startH + (me.clientY - startY));
+          newH = Math.max(36, startH + (me.clientY - startY));
           tr.style.setProperty('--mep-row-height', `${newH}px`);
           tr.classList.add('row-resized');
         }
         function onUp() {
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          if (newH !== startH) model.setRowHeight(rowIdx, newH);
         }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -412,11 +421,20 @@ export function renderExperiencesTab(container, model) {
 /**
  * Creates a <th> with a drag-to-resize handle on its right edge.
  * Resizing sets the th's own width/minWidth, which drives the column width.
+ * When a colId + model are given, the persisted width is applied up front and
+ * committed to the model on mouse-up so it survives re-render and save.
  */
-function createTh(text, className, resizable = false) {
+function createTh(text, className, resizable = false, colId = null, model = null) {
   const th = document.createElement('th');
   th.className = className;
   th.textContent = text;
+
+  // Apply any persisted width so a rebuilt table reproduces the saved size.
+  const savedWidth = colId && model ? model.experiences.columnWidths[colId] : null;
+  if (Number.isFinite(savedWidth)) {
+    th.style.width = `${savedWidth}px`;
+    th.style.minWidth = `${savedWidth}px`;
+  }
 
   if (resizable) {
     const handle = document.createElement('span');
@@ -425,15 +443,17 @@ function createTh(text, className, resizable = false) {
       e.preventDefault();
       const startX = e.clientX;
       const startW = th.offsetWidth;
+      let newW = startW;
 
       function onMove(me) {
-        const newW = Math.max(60, startW + (me.clientX - startX));
+        newW = Math.max(60, startW + (me.clientX - startX));
         th.style.width = `${newW}px`;
         th.style.minWidth = `${newW}px`;
       }
       function onUp() {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        if (colId && model && newW !== startW) model.setColumnWidth(colId, newW);
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);

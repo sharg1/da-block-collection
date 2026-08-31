@@ -32,6 +32,13 @@ export class ManifestModel {
     this.experiences = {
       columns: [],
       rows: [],
+      // Editor-only cell sizing, persisted in a hidden "private-layout" sheet
+      // so it round-trips through the same DA file but never reaches the
+      // previewed/published output. columnWidths is keyed by stable column id
+      // ('action'/'selector'/'pageFilter' for the fixed columns, col.name for
+      // experience columns); rowHeights is parallel to rows (null = unset).
+      columnWidths: {},
+      rowHeights: [],
     };
     this.dirty = false;
     this.listeners = [];
@@ -104,6 +111,7 @@ export class ManifestModel {
     this.experiences.rows.forEach((row) => {
       delete row.values[col.name];
     });
+    delete this.experiences.columnWidths[col.name];
     this.emit();
   }
 
@@ -122,6 +130,10 @@ export class ManifestModel {
       row.values[trimmed] = row.values[oldName];
       delete row.values[oldName];
     });
+    if (Object.prototype.hasOwnProperty.call(this.experiences.columnWidths, oldName)) {
+      this.experiences.columnWidths[trimmed] = this.experiences.columnWidths[oldName];
+      delete this.experiences.columnWidths[oldName];
+    }
     this.emit();
     return true;
   }
@@ -145,6 +157,7 @@ export class ManifestModel {
       pageFilter: '',
       values,
     });
+    this.experiences.rowHeights.push(null);
     this.emit();
   }
 
@@ -160,12 +173,27 @@ export class ManifestModel {
 
   removeRow(idx) {
     this.experiences.rows.splice(idx, 1);
+    this.experiences.rowHeights.splice(idx, 1);
     this.emit();
   }
 
   moveRow(fromIdx, toIdx) {
     const [row] = this.experiences.rows.splice(fromIdx, 1);
     this.experiences.rows.splice(toIdx, 0, row);
+    const [height] = this.experiences.rowHeights.splice(fromIdx, 1);
+    this.experiences.rowHeights.splice(toIdx, 0, height);
+    this.emit();
+  }
+
+  /* ---- Cell sizing (editor-only, persisted via private-layout sheet) ---- */
+
+  setColumnWidth(id, px) {
+    this.experiences.columnWidths[id] = px;
+    this.emit();
+  }
+
+  setRowHeight(idx, px) {
+    this.experiences.rowHeights[idx] = px;
     this.emit();
   }
 
@@ -270,6 +298,42 @@ export class ManifestModel {
       if (defaultCol) defaultCol.isDefault = true;
     }
 
+    // Load editor-only cell sizing from the hidden "private-layout" sheet.
+    // This sheet is optional and purely cosmetic: it's absent on manifests
+    // saved before this existed, and may be missing or malformed on any
+    // manifest. Parsing is fully defensive and best-effort — the grid falls
+    // back to default sizing and, critically, a bad layout sheet must never
+    // prevent the manifest itself from loading. rowHeights is kept parallel
+    // to rows (null = unset).
+    this.experiences.columnWidths = {};
+    this.experiences.rowHeights = this.experiences.rows.map(() => null);
+    try {
+      const layoutSheet = sheetData['private-layout'];
+      const layoutData = Array.isArray(layoutSheet?.data) ? layoutSheet.data : [];
+      layoutData.forEach((entry) => {
+        if (!entry || typeof entry !== 'object') return;
+        const target = String(entry.target ?? '').toLowerCase();
+        const id = String(entry.id ?? '');
+        const size = Number(entry.size);
+        if (!Number.isFinite(size) || size <= 0) return;
+        if (target === 'col') {
+          if (id) this.experiences.columnWidths[id] = size;
+        } else if (target === 'row') {
+          const rowIdx = Number(id);
+          const heights = this.experiences.rowHeights;
+          if (Number.isInteger(rowIdx) && rowIdx >= 0 && rowIdx < heights.length) {
+            heights[rowIdx] = size;
+          }
+        }
+      });
+    } catch (e) {
+      // Any unexpected shape — reset to defaults and keep loading the manifest.
+      this.experiences.columnWidths = {};
+      this.experiences.rowHeights = this.experiences.rows.map(() => null);
+      // eslint-disable-next-line no-console
+      console.warn('MEP: ignoring malformed private-layout sheet', e);
+    }
+
     this.dirty = false;
   }
 
@@ -302,9 +366,23 @@ export class ManifestModel {
       return obj;
     });
 
-    return {
+    // Editor-only cell sizing → one row per sized column/row. The "private-"
+    // prefix keeps this sheet out of the previewed/published output while the
+    // DA source API still returns it, so it round-trips within the same file.
+    const layoutData = [];
+    Object.entries(this.experiences.columnWidths).forEach(([id, size]) => {
+      if (Number.isFinite(size)) layoutData.push({ target: 'col', id, size });
+    });
+    this.experiences.rowHeights.forEach((size, idx) => {
+      if (Number.isFinite(size)) layoutData.push({ target: 'row', id: String(idx), size });
+    });
+
+    const names = ['experiences', 'info', 'placeholders'];
+    if (layoutData.length > 0) names.push('private-layout');
+
+    const sheet = {
       ':type': 'multi-sheet',
-      ':names': ['experiences', 'info', 'placeholders'],
+      ':names': names,
       ':version': 3,
       experiences: {
         total: expData.length,
@@ -328,6 +406,18 @@ export class ManifestModel {
         columns: ['key', 'value'],
       },
     };
+
+    if (layoutData.length > 0) {
+      sheet['private-layout'] = {
+        total: layoutData.length,
+        offset: 0,
+        limit: layoutData.length,
+        data: layoutData,
+        columns: ['target', 'id', 'size'],
+      };
+    }
+
+    return sheet;
   }
 
   markClean() {
