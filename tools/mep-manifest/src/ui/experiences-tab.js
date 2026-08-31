@@ -1,4 +1,5 @@
-import { ACTIONS, MANIFEST_TYPES, EXECUTION_ORDERS } from '../data/manifest-model.js';
+import { MANIFEST_TYPES, EXECUTION_ORDERS } from '../data/manifest-model.js';
+import { getActions, isExtendedAction, getExtendedActionColor } from '../data/actions-registry.js';
 
 // Maps action name → CSS class for the action <td> left-border accent
 const ACTION_CSS_MAP = {
@@ -262,9 +263,16 @@ export function renderExperiencesTab(container, model) {
         tr.classList.add('row-resized');
       }
 
-      // Apply row background color class if action is set
-      if (row.action && ROW_CSS_MAP[row.action]) {
-        tr.classList.add(ROW_CSS_MAP[row.action]);
+      // Apply row background: built-in named class, or the generic custom class
+      // for config-defined actions.
+      if (row.action) {
+        if (ROW_CSS_MAP[row.action]) {
+          tr.classList.add(ROW_CSS_MAP[row.action]);
+        } else if (isExtendedAction(row.action)) {
+          tr.classList.add('row-custom');
+          const color = getExtendedActionColor(row.action);
+          if (color) tr.style.setProperty('--row-accent', color);
+        }
       }
 
       // Row number / drag handle
@@ -465,13 +473,45 @@ function createTh(text, className, resizable = false, colId = null, model = null
 }
 
 /**
+ * Apply the visual accent for an action to its cell (<td> left border) and row
+ * (<tr> background). Clears any prior built-in or custom accent first so
+ * switching actions never leaves stale styling behind.
+ * - Built-in actions use their named CSS classes (unchanged behavior).
+ * - Extended (config) actions use the generic action-custom / row-custom
+ *   classes, with an inline --row-accent color when the config supplied one.
+ */
+function applyActionAccent(td, tr, value) {
+  // Clear built-in classes
+  Object.values(ACTION_CSS_MAP).forEach((cls) => td.classList.remove(cls));
+  Object.values(ROW_CSS_MAP).forEach((cls) => tr.classList.remove(cls));
+  // Clear custom accent
+  td.classList.remove('action-custom');
+  tr.classList.remove('row-custom');
+  tr.style.removeProperty('--row-accent');
+
+  if (!value) return;
+
+  if (ACTION_CSS_MAP[value]) {
+    td.classList.add(ACTION_CSS_MAP[value]);
+    if (ROW_CSS_MAP[value]) tr.classList.add(ROW_CSS_MAP[value]);
+    return;
+  }
+
+  if (isExtendedAction(value)) {
+    td.classList.add('action-custom');
+    tr.classList.add('row-custom');
+    const color = getExtendedActionColor(value);
+    if (color) tr.style.setProperty('--row-accent', color);
+  }
+}
+
+/**
  * Action dropdown cell — applies left-border accent to the <td>
  * and row background class to the parent <tr>.
  */
 function createActionCell(row, rowIdx, model, tr) {
   const td = document.createElement('td');
   td.className = 'action-cell';
-  if (row.action && ACTION_CSS_MAP[row.action]) td.classList.add(ACTION_CSS_MAP[row.action]);
 
   const select = document.createElement('select');
   select.className = 'action-select';
@@ -481,28 +521,42 @@ function createActionCell(row, rowIdx, model, tr) {
   emptyOpt.textContent = '— Select Action —';
   select.append(emptyOpt);
 
-  ACTIONS.forEach((action) => {
+  // Options from the merged registry: built-ins first, then config extras.
+  let currentIsKnown = !row.action;
+  getActions().forEach(({ value, label }) => {
     const opt = document.createElement('option');
-    opt.value = action;
-    opt.textContent = action;
-    if (action === row.action) opt.selected = true;
+    opt.value = value;
+    opt.textContent = label;
+    if (value === row.action) {
+      opt.selected = true;
+      currentIsKnown = true;
+    }
     select.append(opt);
   });
 
+  // Preserve an action value that isn't in the current registry (e.g. a
+  // manifest referencing an action whose config row was removed) so opening
+  // and saving the file never silently drops it.
+  if (!currentIsKnown) {
+    const opt = document.createElement('option');
+    opt.value = row.action;
+    opt.textContent = row.action;
+    opt.selected = true;
+    select.append(opt);
+  }
+
+  // Initial <td> accent (row background is set by the row renderer).
+  if (row.action && ACTION_CSS_MAP[row.action]) {
+    td.classList.add(ACTION_CSS_MAP[row.action]);
+  } else if (row.action && isExtendedAction(row.action)) {
+    td.classList.add('action-custom');
+    const color = getExtendedActionColor(row.action);
+    if (color) tr.style.setProperty('--row-accent', color);
+  }
+
   select.addEventListener('change', (e) => {
     model.updateRow(rowIdx, 'action', e.target.value);
-
-    // Update <td> left-border accent
-    Object.values(ACTION_CSS_MAP).forEach((cls) => td.classList.remove(cls));
-    if (e.target.value && ACTION_CSS_MAP[e.target.value]) {
-      td.classList.add(ACTION_CSS_MAP[e.target.value]);
-    }
-
-    // Update <tr> row background
-    Object.values(ROW_CSS_MAP).forEach((cls) => tr.classList.remove(cls));
-    if (e.target.value && ROW_CSS_MAP[e.target.value]) {
-      tr.classList.add(ROW_CSS_MAP[e.target.value]);
-    }
+    applyActionAccent(td, tr, e.target.value);
   });
 
   td.append(select);

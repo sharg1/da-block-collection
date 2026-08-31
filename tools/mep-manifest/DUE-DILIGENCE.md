@@ -236,3 +236,25 @@ The UI follows Adobe Spectrum conventions — Adobe Blue as the primary action c
 | 3 | **Token expiry not handled.** If the DA bearer token expires mid-session, API calls will fail. There is no re-authentication flow — the author would need to reload the tool. | Medium |
 | 4 | **No grid virtualization.** All rows render to the DOM simultaneously. For manifests with a very large number of rows, this could cause performance degradation. Acceptable for typical manifest sizes today. | Low |
 | 5 | **MEP JSON export converter exists but is unused by the UI.** It is unclear if this was intended for a future "Export" feature or is leftover from an earlier approach. Should be either wired up or removed. | Low |
+
+---
+
+## Extending the Action dropdown
+
+The Action-column dropdown ships with a fixed set of built-in actions. To add
+more without a code change, create a DA sheet at:
+
+    /tools/mep-manifest/actions.json
+
+Columns:
+
+| Column   | Required | Purpose                                              |
+|----------|----------|------------------------------------------------------|
+| `action` | yes      | Value written to the manifest. Must match what the MEP runtime expects. |
+| `label`  | no       | Display text in the dropdown (defaults to `action`). |
+| `color`  | no       | CSS color for the row/cell accent (defaults to neutral gray). |
+
+Rows are additive: they can only add options, never override or reorder the
+built-ins. A row whose `action` matches a built-in is ignored. The sheet is
+read live via the DA source API, so saving it makes new actions available on
+the next tool reload — no preview/publish needed.

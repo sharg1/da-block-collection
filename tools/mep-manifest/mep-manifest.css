@@ -664,6 +664,13 @@ body {
 .mep-grid td.action-insertscript    { border-left: 3px solid var(--action-yellow-border); }
 .mep-grid td.action-updatemetadata  { border-left: 3px solid var(--action-green-border); }
 
+/* Extended (config-sheet) action accent — driven by an inline --row-accent
+   custom property set on the row; falls back to a neutral gray when the
+   config row has no color. */
+.mep-grid td.action-custom {
+  border-left: 3px solid var(--row-accent, var(--action-gray-border));
+}
+
 /* Full-row background tint */
 .mep-grid tr.row-remove > td                                    { background: var(--action-remove); }
 .mep-grid tr.row-replace > td,
@@ -675,6 +682,10 @@ body {
 .mep-grid tr.row-useblockcode > td     { background: var(--action-purple); }
 .mep-grid tr.row-insertscript > td     { background: var(--action-yellow); }
 .mep-grid tr.row-updatemetadata > td   { background: var(--action-green); }
+
+.mep-grid tr.row-custom > td {
+  background: color-mix(in srgb, var(--row-accent, var(--action-gray-border)) 12%, white);
+}
 
 /* Grid footer */
 .mep-grid-footer {
