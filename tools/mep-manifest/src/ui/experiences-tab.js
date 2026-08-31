@@ -99,9 +99,11 @@ export function renderExperiencesTab(container, model) {
   function render() {
     // Preserve scroll position before re-rendering
     let savedScrollLeft = 0;
+    let savedScrollTop = 0;
     const existingGridWrapper = wrap.querySelector('.mep-grid-wrapper');
     if (existingGridWrapper) {
       savedScrollLeft = existingGridWrapper.scrollLeft;
+      savedScrollTop = existingGridWrapper.scrollTop;
     }
 
     // Remove everything after the info bar
@@ -409,6 +411,7 @@ export function renderExperiencesTab(container, model) {
 
     // Restore scroll position
     gridWrapper.scrollLeft = savedScrollLeft;
+    gridWrapper.scrollTop = savedScrollTop;
 
     // Add row button
     const footer = document.createElement('div');
