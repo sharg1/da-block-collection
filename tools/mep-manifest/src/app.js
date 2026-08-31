@@ -1,5 +1,8 @@
 import { ManifestModel } from './data/manifest-model.js';
-import { openManifest, saveManifest, previewManifest, publishManifest, setToken } from './data/da-sheet-adapter.js';
+import {
+  openManifest, saveManifest, previewManifest, publishManifest, setToken, fetchActionsConfig,
+} from './data/da-sheet-adapter.js';
+import { setExtendedActions } from './data/actions-registry.js';
 import { renderFileBrowser } from './ui/file-browser.js';
 import { renderToolbar, setButtonLoading } from './ui/toolbar.js';
 import { renderTabNav } from './ui/tab-nav.js';
@@ -292,10 +295,16 @@ function renderEditor() {
   statusBar = renderStatusBar(appContainer, model);
 }
 
-export function initApp(container, sdkData) {
+export async function initApp(container, sdkData) {
   sdk = sdkData;
   appContainer = container;
   setToken(sdk.token);
+
+  // Load extra dropdown actions from the DA config sheet (additive; failures
+  // resolve to [] and the tool falls back to the built-in action list).
+  const { org, site } = getOrgSite();
+  const configRows = await fetchActionsConfig(org, site);
+  setExtendedActions(configRows);
 
   // Check URL for a direct file path to auto-open
   const urlParams = new URLSearchParams(window.location.search);
