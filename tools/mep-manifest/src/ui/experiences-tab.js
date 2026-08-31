@@ -96,7 +96,10 @@ export function renderExperiencesTab(container, model) {
   wrap.append(infoBar);
 
   // ---- Grid (rebuilt on each render()) ----
-  function render() {
+  // opts.revealLastRow: after rendering, scroll the newly added (last) row into
+  // view and focus its first field instead of preserving the prior scroll
+  // position. Used by "+ Add Row"; every other caller preserves position.
+  function render(opts = {}) {
     // Preserve scroll position before re-rendering
     let savedScrollLeft = 0;
     let savedScrollTop = 0;
@@ -409,19 +412,41 @@ export function renderExperiencesTab(container, model) {
     gridWrapper.append(table);
     wrap.append(gridWrapper);
 
-    // Restore scroll position
-    gridWrapper.scrollLeft = savedScrollLeft;
-    gridWrapper.scrollTop = savedScrollTop;
-
     // Add row button
     const footer = document.createElement('div');
     footer.className = 'mep-grid-footer';
     const addRowBtn = document.createElement('button');
     addRowBtn.className = 'mep-btn';
     addRowBtn.textContent = '+ Add Row';
-    addRowBtn.addEventListener('click', () => { model.addRow(); render(); });
+    addRowBtn.addEventListener('click', () => { model.addRow(); render({ revealLastRow: true }); });
     footer.append(addRowBtn);
     wrap.append(footer);
+
+    // Restore scroll position in a rAF rather than synchronously. Each cell
+    // textarea starts at rows=1 and schedules its own requestAnimationFrame to
+    // auto-grow to its content height; that relayout is what sets the grid's
+    // final scrollHeight. A synchronous restore here runs before those grows,
+    // so scrollTop is clamped against a too-short scrollHeight and the grid
+    // jumps toward the top once the rows expand. Deferring to a rAF (which runs
+    // after the auto-grow rAFs scheduled earlier this frame) restores against
+    // the final height. scrollLeft is unaffected by row growth but is restored
+    // here too so both axes stay in one place.
+    requestAnimationFrame(() => {
+      // Horizontal position is always preserved so the user doesn't lose their
+      // place among the experience columns.
+      gridWrapper.scrollLeft = savedScrollLeft;
+      if (opts.revealLastRow) {
+        // Scroll to the bottom so the new row is visible, then focus its first
+        // field for immediate editing. preventScroll keeps the focus call from
+        // yanking the horizontal position back to the left.
+        gridWrapper.scrollTop = gridWrapper.scrollHeight;
+        const lastTr = tbody.querySelector('tr:last-child');
+        const field = lastTr && lastTr.querySelector('select, textarea, input');
+        if (field) field.focus({ preventScroll: true });
+      } else {
+        gridWrapper.scrollTop = savedScrollTop;
+      }
+    });
   }
 
   render();
