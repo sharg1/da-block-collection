@@ -133,9 +133,14 @@ function extractSheetRows(json) {
  * tool falls back to the built-in action list and keeps working.
  */
 export async function fetchActionsConfig(org, site) {
+  const controller = new AbortController();
+  // A stalled (accepted-but-never-responding) connection must not block the
+  // first render; abort after 4s so this resolves to [] like any other
+  // failure, matching the SDK bootstrap's 4s timeout pattern.
+  const timer = setTimeout(() => controller.abort(), 4000);
   try {
     const url = buildSourceUrl(org, site, ACTIONS_CONFIG_PATH);
-    const resp = await fetch(url, { headers: authHeaders() });
+    const resp = await fetch(url, { headers: authHeaders(), signal: controller.signal });
     if (!resp.ok) return [];
     const json = await resp.json();
     return extractSheetRows(json);
@@ -143,5 +148,7 @@ export async function fetchActionsConfig(org, site) {
     // eslint-disable-next-line no-console
     console.warn('MEP: could not load actions config sheet', e);
     return [];
+  } finally {
+    clearTimeout(timer);
   }
 }

@@ -301,9 +301,17 @@ export async function initApp(container, sdkData) {
   setToken(sdk.token);
 
   // Load extra dropdown actions from the DA config sheet (additive; failures
-  // resolve to [] and the tool falls back to the built-in action list).
-  const { org, site } = getOrgSite();
-  const configRows = await fetchActionsConfig(org, site);
+  // resolve to [] and the tool falls back to the built-in action list). Any
+  // unexpected throw here must still let the file browser render below —
+  // a missing or broken config sheet must never break the tool.
+  let configRows = [];
+  try {
+    const { org, site } = getOrgSite();
+    configRows = await fetchActionsConfig(org, site);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('MEP: actions config load failed', e);
+  }
   setExtendedActions(configRows);
 
   // Check URL for a direct file path to auto-open

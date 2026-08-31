@@ -19,6 +19,7 @@ export function setExtendedActions(rows) {
   const seen = new Set();
   extendedActions = [];
   (rows || []).forEach((row) => {
+    if (!row || typeof row !== 'object') return;
     const value = String(row.action ?? '').trim();
     if (!value) return;
     if (builtin.has(value)) return;
