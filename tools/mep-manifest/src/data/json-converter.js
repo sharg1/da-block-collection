@@ -9,6 +9,10 @@
  *     "overridename": ""
  *   },
  *   "placeholders": { "key1": "val1", ... },
+ *   // For manifesttype "promo", placeholders is instead an array of
+ *   // objects — one per Key row, with each Value column as a property —
+ *   // mirroring the "experiences" shape below:
+ *   // "placeholders": [{ "key": "title", "en": "Hello", "fr": "Bonjour" }, ...]
  *   "experiences": [
  *     {
  *       "action": "replaceContent",
@@ -26,10 +30,22 @@ export function toMepJson(model) {
   if (model.info.executionOrder) info.executionorder = model.info.executionOrder;
   if (model.info.overrideName) info.overridename = model.info.overrideName;
 
-  const placeholders = {};
-  model.placeholders.forEach((ph) => {
-    if (ph.key) placeholders[ph.key] = ph.value;
-  });
+  let placeholders;
+  if (model.info.type === 'promo') {
+    placeholders = model.promo.rows.map((row) => {
+      const obj = { key: row.key };
+      model.promo.columns.forEach((col) => {
+        const val = row.values[col.name];
+        if (val !== undefined) obj[col.name] = val;
+      });
+      return obj;
+    });
+  } else {
+    placeholders = {};
+    model.placeholders.forEach((ph) => {
+      if (ph.key) placeholders[ph.key] = ph.value;
+    });
+  }
 
   const experiences = model.experiences.rows.map((row) => {
     const exp = {};

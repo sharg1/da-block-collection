@@ -40,6 +40,16 @@ export class ManifestModel {
       columnWidths: {},
       rowHeights: [],
     };
+    // Grid-shaped placeholders used when info.type === 'promo': a fixed Key
+    // column plus any number of named Value columns per row. Kept alongside
+    // (not replacing) `placeholders` so switching manifest type never loses
+    // either sheet's data.
+    this.promo = {
+      columns: [],
+      rows: [],
+      columnWidths: {},
+      rowHeights: [],
+    };
     this.dirty = false;
     this.listeners = [];
     this.filePath = '';
@@ -197,6 +207,103 @@ export class ManifestModel {
     this.emit();
   }
 
+  /* ---- Promo Placeholder Columns ---- */
+
+  addPromoColumn(name) {
+    this.promo.columns.push({ name });
+    this.promo.rows.forEach((row) => {
+      row.values[name] = '';
+    });
+    this.emit();
+  }
+
+  removePromoColumn(idx) {
+    const col = this.promo.columns[idx];
+    if (!col) return;
+    if (this.promo.columns.length <= 1) return;
+    this.promo.columns.splice(idx, 1);
+    this.promo.rows.forEach((row) => {
+      delete row.values[col.name];
+    });
+    delete this.promo.columnWidths[col.name];
+    this.emit();
+  }
+
+  renamePromoColumn(idx, newName) {
+    const col = this.promo.columns[idx];
+    const trimmed = newName.trim();
+    if (!trimmed) return false;
+    const isDuplicate = this.promo.columns.some(
+      (c, i) => i !== idx && c.name.toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (isDuplicate) return false;
+    if (trimmed === col.name) return true;
+    const oldName = col.name;
+    col.name = trimmed;
+    this.promo.rows.forEach((row) => {
+      row.values[trimmed] = row.values[oldName];
+      delete row.values[oldName];
+    });
+    if (Object.prototype.hasOwnProperty.call(this.promo.columnWidths, oldName)) {
+      this.promo.columnWidths[trimmed] = this.promo.columnWidths[oldName];
+      delete this.promo.columnWidths[oldName];
+    }
+    this.emit();
+    return true;
+  }
+
+  movePromoColumn(fromIdx, toIdx) {
+    const [col] = this.promo.columns.splice(fromIdx, 1);
+    this.promo.columns.splice(toIdx, 0, col);
+    this.emit();
+  }
+
+  /* ---- Promo Placeholder Rows ---- */
+
+  addPromoRow() {
+    const values = {};
+    this.promo.columns.forEach((col) => {
+      values[col.name] = '';
+    });
+    this.promo.rows.push({ key: '', values });
+    this.promo.rowHeights.push(null);
+    this.emit();
+  }
+
+  updatePromoRow(rowIdx, field, value) {
+    this.promo.rows[rowIdx][field] = value;
+    this.emit();
+  }
+
+  updatePromoRowValue(rowIdx, colName, value) {
+    this.promo.rows[rowIdx].values[colName] = value;
+    this.emit();
+  }
+
+  removePromoRow(idx) {
+    this.promo.rows.splice(idx, 1);
+    this.promo.rowHeights.splice(idx, 1);
+    this.emit();
+  }
+
+  movePromoRow(fromIdx, toIdx) {
+    const [row] = this.promo.rows.splice(fromIdx, 1);
+    this.promo.rows.splice(toIdx, 0, row);
+    const [height] = this.promo.rowHeights.splice(fromIdx, 1);
+    this.promo.rowHeights.splice(toIdx, 0, height);
+    this.emit();
+  }
+
+  setPromoColumnWidth(id, px) {
+    this.promo.columnWidths[id] = px;
+    this.emit();
+  }
+
+  setPromoRowHeight(idx, px) {
+    this.promo.rowHeights[idx] = px;
+    this.emit();
+  }
+
   /* ---- Serialization: to/from DA sheet format ---- */
 
   /**
@@ -298,6 +405,28 @@ export class ManifestModel {
       if (defaultCol) defaultCol.isDefault = true;
     }
 
+    // Load promo placeholders (Key + dynamic Value columns).
+    const promoData = sheetData.promo?.data || [];
+    if (promoData.length > 0) {
+      const getVal = (row, key) => {
+        const lk = key.toLowerCase();
+        const found = Object.keys(row).find((k) => k.toLowerCase() === lk);
+        return found ? (row[found] || '') : '';
+      };
+      const promoColNames = Object.keys(promoData[0]).filter((k) => k.toLowerCase() !== 'key');
+      this.promo.columns = promoColNames.map((name) => ({ name }));
+      this.promo.rows = promoData.map((row) => {
+        const values = {};
+        promoColNames.forEach((name) => {
+          values[name] = row[name] || '';
+        });
+        return { key: getVal(row, 'key'), values };
+      });
+    } else {
+      this.promo.columns = [];
+      this.promo.rows = [];
+    }
+
     // Load editor-only cell sizing from the hidden "private-layout" sheet.
     // This sheet is optional and purely cosmetic: it's absent on manifests
     // saved before this existed, and may be missing or malformed on any
@@ -307,6 +436,8 @@ export class ManifestModel {
     // to rows (null = unset).
     this.experiences.columnWidths = {};
     this.experiences.rowHeights = this.experiences.rows.map(() => null);
+    this.promo.columnWidths = {};
+    this.promo.rowHeights = this.promo.rows.map(() => null);
     try {
       const layoutSheet = sheetData['private-layout'];
       const layoutData = Array.isArray(layoutSheet?.data) ? layoutSheet.data : [];
@@ -324,12 +455,22 @@ export class ManifestModel {
           if (Number.isInteger(rowIdx) && rowIdx >= 0 && rowIdx < heights.length) {
             heights[rowIdx] = size;
           }
+        } else if (target === 'promo-col') {
+          if (id) this.promo.columnWidths[id] = size;
+        } else if (target === 'promo-row') {
+          const rowIdx = Number(id);
+          const heights = this.promo.rowHeights;
+          if (Number.isInteger(rowIdx) && rowIdx >= 0 && rowIdx < heights.length) {
+            heights[rowIdx] = size;
+          }
         }
       });
     } catch (e) {
       // Any unexpected shape — reset to defaults and keep loading the manifest.
       this.experiences.columnWidths = {};
       this.experiences.rowHeights = this.experiences.rows.map(() => null);
+      this.promo.columnWidths = {};
+      this.promo.rowHeights = this.promo.rows.map(() => null);
       // eslint-disable-next-line no-console
       console.warn('MEP: ignoring malformed private-layout sheet', e);
     }
@@ -354,6 +495,14 @@ export class ManifestModel {
       value: ph.value,
     }));
 
+    const promoData = this.promo.rows.map((row) => {
+      const obj = { key: row.key };
+      this.promo.columns.forEach((col) => {
+        obj[col.name] = row.values[col.name] || '';
+      });
+      return obj;
+    });
+
     const expData = this.experiences.rows.map((row) => {
       const obj = {
         action: row.action,
@@ -376,8 +525,14 @@ export class ManifestModel {
     this.experiences.rowHeights.forEach((size, idx) => {
       if (Number.isFinite(size)) layoutData.push({ target: 'row', id: String(idx), size });
     });
+    Object.entries(this.promo.columnWidths).forEach(([id, size]) => {
+      if (Number.isFinite(size)) layoutData.push({ target: 'promo-col', id, size });
+    });
+    this.promo.rowHeights.forEach((size, idx) => {
+      if (Number.isFinite(size)) layoutData.push({ target: 'promo-row', id: String(idx), size });
+    });
 
-    const names = ['experiences', 'info', 'placeholders'];
+    const names = ['experiences', 'info', 'placeholders', 'promo'];
     if (layoutData.length > 0) names.push('private-layout');
 
     const sheet = {
@@ -405,6 +560,13 @@ export class ManifestModel {
         data: placeholderData,
         columns: ['key', 'value'],
       },
+      promo: {
+        total: promoData.length,
+        offset: 0,
+        limit: promoData.length,
+        data: promoData,
+        columns: ['key', ...this.promo.columns.map((col) => col.name)],
+      },
     };
 
     if (layoutData.length > 0) {
@@ -431,8 +593,9 @@ export class ManifestModel {
     const model = new ManifestModel();
     model.addColumn('all', true);
     model.addRow();
-    // addColumn/addRow mark the model dirty as a side effect, but this
-    // initial scaffolding isn't a user edit — a brand-new, untouched
+    model.addPromoColumn('Value');
+    // addColumn/addRow/addPromoColumn mark the model dirty as a side effect,
+    // but this initial scaffolding isn't a user edit — a brand-new, untouched
     // manifest shouldn't trip "Discard unsaved changes?" prompts.
     model.markClean();
     return model;

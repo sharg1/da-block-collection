@@ -1,5 +1,10 @@
 import { MANIFEST_TYPES, EXECUTION_ORDERS } from '../data/manifest-model.js';
 import { getActions, isExtendedAction, getExtendedActionColor } from '../data/actions-registry.js';
+import {
+  createResizableTh, attachColumnDragReorder, attachRowDragReorder, attachRowResize,
+  createTextCell, createInputCell,
+  showAddColumnDialog, showDeleteColumnDialog, showRenameColumnDialog,
+} from './grid-helpers.js';
 
 // Maps action name → CSS class for the action <td> left-border accent
 const ACTION_CSS_MAP = {
@@ -28,6 +33,13 @@ const ROW_CSS_MAP = {
   insertScript: 'row-insertscript',
   updateMetadata: 'row-updatemetadata',
 };
+
+function isDuplicateColumnName(model, name, excludeIdx = -1) {
+  const trimmed = name.trim().toLowerCase();
+  return model.experiences.columns.some(
+    (c, i) => i !== excludeIdx && c.name.toLowerCase() === trimmed,
+  );
+}
 
 /**
  * Renders the Experiences tab — includes an inline info bar at the top
@@ -127,10 +139,19 @@ export function renderExperiencesTab(container, model) {
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
 
-    headerRow.append(createTh('#', 'col-handle'));
-    headerRow.append(createTh('Action', 'col-action', true, 'action', model));
-    headerRow.append(createTh('Selector', 'col-selector', true, 'selector', model));
-    headerRow.append(createTh('Page Filter', 'col-page-filter', true, 'pageFilter', model));
+    headerRow.append(createResizableTh('#', 'col-handle'));
+    headerRow.append(createResizableTh('Action', 'col-action', {
+      savedWidth: model.experiences.columnWidths.action,
+      onResize: (w) => model.setColumnWidth('action', w),
+    }));
+    headerRow.append(createResizableTh('Selector', 'col-selector', {
+      savedWidth: model.experiences.columnWidths.selector,
+      onResize: (w) => model.setColumnWidth('selector', w),
+    }));
+    headerRow.append(createResizableTh('Page Filter', 'col-page-filter', {
+      savedWidth: model.experiences.columnWidths.pageFilter,
+      onResize: (w) => model.setColumnWidth('pageFilter', w),
+    }));
 
     // Fixed columns above occupy header/row positions 0-3; experience
     // columns start at position 4 — used to find each column's cells
@@ -154,7 +175,10 @@ export function renderExperiencesTab(container, model) {
 
     model.experiences.columns.forEach((col, colIdx) => {
       const isTarget = col.name.toLowerCase().startsWith('target');
-      const th = createTh('', `col-experience${isTarget ? ' target' : ''}`, true, col.name, model);
+      const th = createResizableTh('', `col-experience${isTarget ? ' target' : ''}`, {
+        savedWidth: model.experiences.columnWidths[col.name],
+        onResize: (w) => model.setColumnWidth(col.name, w),
+      });
 
       const colNameLabel = document.createElement('span');
       colNameLabel.className = 'col-name-label';
@@ -162,7 +186,15 @@ export function renderExperiencesTab(container, model) {
       colNameLabel.title = 'Double-click to rename';
       colNameLabel.addEventListener('dblclick', (e) => {
         e.stopPropagation();
-        showRenameColumnDialog(model, colIdx, render);
+        showRenameColumnDialog({
+          currentName: col.name,
+          isDuplicate: (name) => isDuplicateColumnName(model, name, colIdx),
+          onRename: (name) => {
+            const ok = model.renameColumn(colIdx, name);
+            if (ok) render();
+            return ok;
+          },
+        });
       });
       th.prepend(colNameLabel);
 
@@ -171,56 +203,15 @@ export function renderExperiencesTab(container, model) {
       grip.textContent = '⠿';
       grip.title = 'Drag to reorder column';
       grip.setAttribute('aria-hidden', 'true');
-      grip.draggable = true;
       th.prepend(grip);
 
-      grip.addEventListener('dragstart', (e) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/mep-column-index', String(colIdx));
-        getColumnCells(colIdx).forEach((cell) => cell.classList.add('col-dragging'));
-      });
-
-      grip.addEventListener('dragend', () => {
-        getColumnCells(colIdx).forEach((cell) => cell.classList.remove('col-dragging'));
-        clearColumnDragIndicators();
-      });
-
-      th.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-
-        const rect = th.getBoundingClientRect();
-        const isRightHalf = (e.clientX - rect.left) > rect.width / 2;
-
-        clearColumnDragIndicators();
-        getColumnCells(colIdx).forEach((cell) => {
-          cell.classList.add(isRightHalf ? 'col-insert-after' : 'col-insert-before');
-        });
-      });
-
-      th.addEventListener('dragleave', (e) => {
-        if (!th.contains(e.relatedTarget)) {
-          getColumnCells(colIdx).forEach((cell) => {
-            cell.classList.remove('col-insert-before', 'col-insert-after');
-          });
-        }
-      });
-
-      th.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const fromIdx = parseInt(e.dataTransfer.getData('text/mep-column-index'), 10);
-        const isAfter = th.classList.contains('col-insert-after');
-        clearColumnDragIndicators();
-
-        if (Number.isNaN(fromIdx) || fromIdx === colIdx) return;
-
-        let toIdx = isAfter ? colIdx + 1 : colIdx;
-        // moveColumn splices the column out first, which shifts every
-        // index after it down by one — compensate when dragging right.
-        if (fromIdx < toIdx) toIdx -= 1;
-
-        model.moveColumn(fromIdx, toIdx);
-        render();
+      attachColumnDragReorder(th, grip, colIdx, {
+        getColumnCells,
+        clearIndicators: clearColumnDragIndicators,
+        onDrop: (fromIdx, toIdx) => {
+          model.moveColumn(fromIdx, toIdx);
+          render();
+        },
       });
 
       if (!col.isDefault) {
@@ -230,7 +221,13 @@ export function renderExperiencesTab(container, model) {
         deleteBtn.title = 'Delete column';
         deleteBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          showDeleteColumnDialog(model, colIdx, render);
+          showDeleteColumnDialog({
+            colName: col.name,
+            onDelete: () => {
+              model.removeColumn(colIdx);
+              render();
+            },
+          });
         });
         th.append(deleteBtn);
       }
@@ -242,10 +239,18 @@ export function renderExperiencesTab(container, model) {
     addColTh.className = 'col-add';
     addColTh.textContent = '+';
     addColTh.title = 'Add Experience Column';
-    addColTh.addEventListener('click', () => showAddColumnDialog(model, render));
+    addColTh.addEventListener('click', () => showAddColumnDialog({
+      title: 'Add Experience Column',
+      placeholder: 'e.g., all, target-returning-users',
+      isDuplicate: (name) => isDuplicateColumnName(model, name),
+      onAdd: (name) => {
+        model.addColumn(name);
+        render();
+      },
+    }));
     headerRow.append(addColTh);
 
-    headerRow.append(createTh('', 'col-handle'));
+    headerRow.append(createResizableTh('', 'col-handle'));
 
     thead.append(headerRow);
     table.append(thead);
@@ -286,7 +291,6 @@ export function renderExperiencesTab(container, model) {
 
       const handle = document.createElement('div');
       handle.className = 'drag-handle';
-      handle.draggable = true;
       handle.title = 'Drag to reorder';
 
       const grip = document.createElement('span');
@@ -304,71 +308,15 @@ export function renderExperiencesTab(container, model) {
       const rowResizeHandle = document.createElement('span');
       rowResizeHandle.className = 'mep-row-resize-handle';
       rowResizeHandle.title = 'Drag to resize row';
-      rowResizeHandle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const startY = e.clientY;
-        const startH = tr.getBoundingClientRect().height;
-        let newH = startH;
-
-        function onMove(me) {
-          newH = Math.max(36, startH + (me.clientY - startY));
-          tr.style.setProperty('--mep-row-height', `${newH}px`);
-          tr.classList.add('row-resized');
-        }
-        function onUp() {
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
-          if (newH !== startH) model.setRowHeight(rowIdx, newH);
-        }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-      });
+      attachRowResize(rowResizeHandle, tr, (newH) => model.setRowHeight(rowIdx, newH));
       handleTd.append(rowResizeHandle);
 
-      handle.addEventListener('dragstart', (e) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(rowIdx));
-        tr.classList.add('row-dragging');
-      });
-
-      handle.addEventListener('dragend', () => {
-        tr.classList.remove('row-dragging');
-        clearDragIndicators();
-      });
-
-      tr.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-
-        const rect = tr.getBoundingClientRect();
-        const isBottomHalf = (e.clientY - rect.top) > rect.height / 2;
-
-        clearDragIndicators();
-        tr.classList.add(isBottomHalf ? 'drag-insert-after' : 'drag-insert-before');
-      });
-
-      tr.addEventListener('dragleave', (e) => {
-        if (!tr.contains(e.relatedTarget)) {
-          tr.classList.remove('drag-insert-before', 'drag-insert-after');
-        }
-      });
-
-      tr.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
-        const isAfter = tr.classList.contains('drag-insert-after');
-        clearDragIndicators();
-
-        if (Number.isNaN(fromIdx) || fromIdx === rowIdx) return;
-
-        let toIdx = isAfter ? rowIdx + 1 : rowIdx;
-        // moveRow splices the row out first, which shifts every index
-        // after it down by one — compensate when dragging downward.
-        if (fromIdx < toIdx) toIdx -= 1;
-
-        model.moveRow(fromIdx, toIdx);
-        render();
+      attachRowDragReorder(tr, handle, rowIdx, {
+        clearIndicators: clearDragIndicators,
+        onDrop: (fromIdx, toIdx) => {
+          model.moveRow(fromIdx, toIdx);
+          render();
+        },
       });
       tr.append(handleTd);
 
@@ -399,7 +347,7 @@ export function renderExperiencesTab(container, model) {
       const deleteTd = document.createElement('td');
       deleteTd.className = 'col-delete';
       const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = '\u00D7';
+      deleteBtn.textContent = '×';
       deleteBtn.title = 'Delete row';
       deleteBtn.addEventListener('click', () => { model.removeRow(rowIdx); render(); });
       deleteTd.append(deleteBtn);
@@ -452,52 +400,6 @@ export function renderExperiencesTab(container, model) {
   render();
   container.append(wrap);
   return { el: wrap, refresh: render };
-}
-
-/**
- * Creates a <th> with a drag-to-resize handle on its right edge.
- * Resizing sets the th's own width/minWidth, which drives the column width.
- * When a colId + model are given, the persisted width is applied up front and
- * committed to the model on mouse-up so it survives re-render and save.
- */
-function createTh(text, className, resizable = false, colId = null, model = null) {
-  const th = document.createElement('th');
-  th.className = className;
-  th.textContent = text;
-
-  // Apply any persisted width so a rebuilt table reproduces the saved size.
-  const savedWidth = colId && model ? model.experiences.columnWidths[colId] : null;
-  if (Number.isFinite(savedWidth)) {
-    th.style.width = `${savedWidth}px`;
-    th.style.minWidth = `${savedWidth}px`;
-  }
-
-  if (resizable) {
-    const handle = document.createElement('span');
-    handle.className = 'mep-col-resize-handle';
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      const startX = e.clientX;
-      const startW = th.offsetWidth;
-      let newW = startW;
-
-      function onMove(me) {
-        newW = Math.max(60, startW + (me.clientX - startX));
-        th.style.width = `${newW}px`;
-        th.style.minWidth = `${newW}px`;
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        if (colId && model && newW !== startW) model.setColumnWidth(colId, newW);
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-    th.append(handle);
-  }
-
-  return th;
 }
 
 /**
@@ -589,286 +491,4 @@ function createActionCell(row, rowIdx, model, tr) {
 
   td.append(select);
   return td;
-}
-
-/**
- * Textarea cell with auto-grow and URL link button.
- * Used for Selector and Experience columns.
- */
-function createTextCell(value, onChange) {
-  const td = document.createElement('td');
-  const wrapper = document.createElement('div');
-  wrapper.className = 'cell-wrapper';
-
-  const textarea = document.createElement('textarea');
-  textarea.className = 'cell-input';
-  textarea.rows = 1;
-  textarea.value = value;
-
-  function autoGrow() {
-    textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  }
-
-  textarea.addEventListener('input', () => {
-    autoGrow();
-    onChange(textarea.value);
-  });
-
-  wrapper.append(textarea);
-
-  // URL link button — only visible when value is a URL
-  const linkBtn = document.createElement('a');
-  linkBtn.className = 'cell-link-btn';
-  linkBtn.target = '_blank';
-  linkBtn.rel = 'noopener noreferrer';
-  linkBtn.title = 'Open URL';
-  linkBtn.textContent = '↗';
-
-  function updateLinkBtn() {
-    const val = textarea.value.trim();
-    const isUrl = /^https?:\/\//i.test(val);
-    linkBtn.style.display = isUrl ? '' : 'none';
-    if (isUrl) linkBtn.href = val;
-  }
-
-  textarea.addEventListener('input', updateLinkBtn);
-  updateLinkBtn();
-  wrapper.append(linkBtn);
-
-  td.append(wrapper);
-  requestAnimationFrame(autoGrow);
-  return td;
-}
-
-/**
- * Plain input cell — used for Page Filter.
- */
-function createInputCell(value, onChange) {
-  const td = document.createElement('td');
-  const input = document.createElement('input');
-  input.className = 'cell-input cell-input-plain';
-  input.type = 'text';
-  input.value = value;
-  input.addEventListener('change', (e) => onChange(e.target.value));
-  td.append(input);
-  return td;
-}
-
-function isDuplicateColumnName(model, name, excludeIdx = -1) {
-  const trimmed = name.trim().toLowerCase();
-  return model.experiences.columns.some(
-    (c, i) => i !== excludeIdx && c.name.toLowerCase() === trimmed,
-  );
-}
-
-function showAddColumnDialog(model, refreshFn) {
-  const overlay = document.createElement('div');
-  overlay.className = 'mep-dialog-overlay';
-
-  const dialog = document.createElement('div');
-  dialog.className = 'mep-dialog';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Add Experience Column';
-
-  const field = document.createElement('div');
-  field.className = 'mep-field';
-  const label = document.createElement('label');
-  label.className = 'mep-field-label';
-  label.textContent = 'Column Name';
-  const input = document.createElement('input');
-  input.className = 'mep-input';
-  input.type = 'text';
-  input.placeholder = 'e.g., all, target-returning-users';
-  input.autofocus = true;
-  const errorEl = document.createElement('div');
-  errorEl.className = 'mep-field-error';
-  errorEl.hidden = true;
-  field.append(label, input, errorEl);
-
-  const actions = document.createElement('div');
-  actions.className = 'mep-dialog-actions';
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'mep-btn';
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => overlay.remove());
-
-  function showError(message) {
-    errorEl.textContent = message;
-    errorEl.hidden = false;
-    input.classList.add('mep-input-error');
-  }
-
-  function clearError() {
-    errorEl.hidden = true;
-    input.classList.remove('mep-input-error');
-  }
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'mep-btn mep-btn-primary';
-  addBtn.textContent = 'Add';
-  addBtn.addEventListener('click', () => {
-    const name = input.value.trim();
-    if (!name) {
-      showError('Column name is required.');
-      return;
-    }
-    if (isDuplicateColumnName(model, name)) {
-      showError(`A column named "${name}" already exists.`);
-      return;
-    }
-    model.addColumn(name);
-    overlay.remove();
-    refreshFn();
-  });
-
-  input.addEventListener('input', clearError);
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addBtn.click();
-    if (e.key === 'Escape') overlay.remove();
-  });
-
-  actions.append(cancelBtn, addBtn);
-  dialog.append(h3, field, actions);
-  overlay.append(dialog);
-  document.body.append(overlay);
-
-  requestAnimationFrame(() => input.focus());
-}
-
-function showDeleteColumnDialog(model, colIdx, refreshFn) {
-  const col = model.experiences.columns[colIdx];
-
-  const overlay = document.createElement('div');
-  overlay.className = 'mep-dialog-overlay';
-
-  const dialog = document.createElement('div');
-  dialog.className = 'mep-dialog';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Delete Column';
-
-  const message = document.createElement('p');
-  message.textContent = `Delete column "${col.name}"? All values in this column will be lost for every row.`;
-
-  const actions = document.createElement('div');
-  actions.className = 'mep-dialog-actions';
-
-  function onKeydown(e) {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      document.removeEventListener('keydown', onKeydown);
-    }
-  }
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'mep-btn';
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => {
-    overlay.remove();
-    document.removeEventListener('keydown', onKeydown);
-  });
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'mep-btn mep-btn-danger';
-  deleteBtn.textContent = 'Delete';
-  deleteBtn.addEventListener('click', () => {
-    model.removeColumn(colIdx);
-    overlay.remove();
-    document.removeEventListener('keydown', onKeydown);
-    refreshFn();
-  });
-
-  document.addEventListener('keydown', onKeydown);
-
-  actions.append(cancelBtn, deleteBtn);
-  dialog.append(h3, message, actions);
-  overlay.append(dialog);
-  document.body.append(overlay);
-}
-
-function showRenameColumnDialog(model, colIdx, refreshFn) {
-  const col = model.experiences.columns[colIdx];
-
-  const overlay = document.createElement('div');
-  overlay.className = 'mep-dialog-overlay';
-
-  const dialog = document.createElement('div');
-  dialog.className = 'mep-dialog';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Rename Column';
-
-  const field = document.createElement('div');
-  field.className = 'mep-field';
-  const label = document.createElement('label');
-  label.className = 'mep-field-label';
-  label.textContent = 'Column Name';
-  const input = document.createElement('input');
-  input.className = 'mep-input';
-  input.type = 'text';
-  input.value = col.name;
-  input.autofocus = true;
-  const errorEl = document.createElement('div');
-  errorEl.className = 'mep-field-error';
-  errorEl.hidden = true;
-  field.append(label, input, errorEl);
-
-  function showError(message) {
-    errorEl.textContent = message;
-    errorEl.hidden = false;
-    input.classList.add('mep-input-error');
-  }
-
-  function clearError() {
-    errorEl.hidden = true;
-    input.classList.remove('mep-input-error');
-  }
-
-  const actions = document.createElement('div');
-  actions.className = 'mep-dialog-actions';
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'mep-btn';
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.addEventListener('click', () => overlay.remove());
-
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'mep-btn mep-btn-primary';
-  saveBtn.textContent = 'Save';
-  saveBtn.addEventListener('click', () => {
-    const name = input.value.trim();
-    if (!name) {
-      showError('Column name is required.');
-      return;
-    }
-    if (isDuplicateColumnName(model, name, colIdx)) {
-      showError(`A column named "${name}" already exists.`);
-      return;
-    }
-    const ok = model.renameColumn(colIdx, name);
-    if (!ok) {
-      showError('Could not rename this column.');
-      return;
-    }
-    overlay.remove();
-    refreshFn();
-  });
-
-  input.addEventListener('input', clearError);
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveBtn.click();
-    if (e.key === 'Escape') overlay.remove();
-  });
-
-  actions.append(cancelBtn, saveBtn);
-  dialog.append(h3, field, actions);
-  overlay.append(dialog);
-  document.body.append(overlay);
-
-  requestAnimationFrame(() => { input.focus(); input.select(); });
 }

@@ -314,6 +314,16 @@ body {
   overflow: hidden;
 }
 
+/* Placeholders tab in promo-grid mode gets the same treatment so its sticky
+   header row can freeze while rows scroll underneath. Scoped to the class
+   (not the tab id) so the flat Key/Value list keeps its normal auto-scroll
+   layout for personalization/test manifests. */
+.mep-tab-content.mep-grid-mode {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .mep-grid-wrapper {
   overflow: auto;
   flex: 1;
@@ -394,6 +404,12 @@ body {
 }
 
 .mep-grid th.col-page-filter {
+  background: #f0f0f0;
+  color: var(--mep-text);
+  min-width: 160px;
+}
+
+.mep-grid th.col-key {
   background: #f0f0f0;
   color: var(--mep-text);
   min-width: 160px;
