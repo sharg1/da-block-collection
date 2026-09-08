@@ -299,9 +299,47 @@ export function renderPlaceholdersTab(container, model) {
   wrap.id = 'tab-placeholders';
   wrap.style.display = 'none';
 
+  // ---- Info bar (built once, outside render()) ----
+  // Mirrors the Manifest Type selector on the Experiences tab so switching
+  // between the flat placeholder list and the promo grid is discoverable
+  // from this tab too, without having to jump elsewhere. Both selectors
+  // read/write the same model.info.type — "Placeholder" collapses
+  // personalization/test into one option since this tab only distinguishes
+  // promo vs. non-promo.
+  const infoBar = document.createElement('div');
+  infoBar.className = 'mep-info-bar';
+
+  const typeField = document.createElement('div');
+  typeField.className = 'mep-field';
+  const typeLabel = document.createElement('label');
+  typeLabel.className = 'mep-field-label';
+  typeLabel.textContent = 'Type';
+  const typeSelect = document.createElement('select');
+  typeSelect.className = 'mep-select';
+  [['placeholder', 'Placeholder'], ['promo', 'Promo']].forEach(([value, label]) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    typeSelect.append(opt);
+  });
+  typeSelect.addEventListener('change', (e) => {
+    if (e.target.value === 'promo') {
+      model.setInfo('type', 'promo');
+    } else if (model.info.type === 'promo') {
+      model.setInfo('type', 'personalization');
+    }
+  });
+  typeField.append(typeLabel, typeSelect);
+  infoBar.append(typeField);
+  wrap.append(infoBar);
+
   function render(opts = {}) {
-    wrap.innerHTML = '';
     const isPromo = model.info.type === 'promo';
+    typeSelect.value = isPromo ? 'promo' : 'placeholder';
+
+    // Remove everything after the info bar
+    while (wrap.lastChild !== infoBar) wrap.removeChild(wrap.lastChild);
+
     wrap.classList.toggle('mep-grid-mode', isPromo);
     if (isPromo) {
       renderPromoGrid(wrap, model, render, opts);
@@ -310,10 +348,11 @@ export function renderPlaceholdersTab(container, model) {
     }
   }
 
-  // The Manifest Type selector lives in the Experiences tab's info bar; when
-  // it changes, re-render so this tab switches between the flat list and the
-  // promo grid. Guarded on type actually changing so edits elsewhere in the
-  // model (which also call emit()) don't trigger a redundant rebuild.
+  // The Manifest Type selector on the Experiences tab writes the same
+  // model.info.type; when it changes there, re-render here too so both
+  // selectors and this tab's content stay in sync. Guarded on type actually
+  // changing so edits elsewhere in the model (which also call emit()) don't
+  // trigger a redundant rebuild.
   let lastType = model.info.type;
   model.onChange(() => {
     if (model.info.type !== lastType) {

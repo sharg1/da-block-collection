@@ -72,6 +72,13 @@ export function renderExperiencesTab(container, model) {
   typeSelect.addEventListener('change', (e) => model.setInfo('type', e.target.value));
   typeField.append(typeLabel, typeSelect);
 
+  // The Placeholders tab's own Type selector can also change model.info.type
+  // (switching to/from promo) — keep this select's displayed value in sync
+  // when that happens, since it's otherwise only set once at build time.
+  model.onChange(() => {
+    if (typeSelect.value !== model.info.type) typeSelect.value = model.info.type;
+  });
+
   // Execution Order
   const orderField = document.createElement('div');
   orderField.className = 'mep-field';
