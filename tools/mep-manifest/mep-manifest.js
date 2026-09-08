@@ -44,6 +44,17 @@ async function init() {
     console.error('[MEP] SDK initialization error:', e);
   }
 
+  // Allow query param overrides for sandbox selection (e.g., ?org=da-cc&repo=da-cc-sandbox)
+  const params = new URLSearchParams(window.location.search);
+  const paramOrg = params.get('org');
+  const paramRepo = params.get('repo');
+
+  if (paramOrg || paramRepo) {
+    console.log('[MEP] Query params detected, overriding context:', { org: paramOrg, repo: paramRepo });
+    if (paramOrg) context.org = paramOrg;
+    if (paramRepo) context.repo = paramRepo;
+  }
+
   console.log('[MEP] Final context being used:', context);
   initApp(document.getElementById('app'), { context, token, actions });
 }
