@@ -115,7 +115,7 @@ function showFileBrowser() {
   const appUrl = context.path
     ? new URL(
       `/app/${context.org}/${context.repo}/${context.path}`,
-      context.daOrigin || 'https://da.live',
+      'https://da.live',
     )
     : new URL(window.location.href);
   if (context.path) {
