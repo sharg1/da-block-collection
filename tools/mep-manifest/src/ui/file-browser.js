@@ -50,7 +50,7 @@ function getStatusDate(status, field) {
  *  - Everything else (DA docs, html): grayed out / inactive
  */
 export function renderFileBrowser(container, {
-  org, site, startPath = '', onOpen, onNew,
+  org, site, startPath = '', getOpenUrl, onOpen, onNew,
 }) {
   const wrap = document.createElement('div');
   wrap.className = 'mep-file-browser';
@@ -247,9 +247,12 @@ export function renderFileBrowser(container, {
         // eslint-disable-next-line no-nested-ternary
         icon.textContent = isFolder ? '📁' : isSheet ? '📊' : '📝';
 
-        const nameEl = document.createElement('span');
+        const nameEl = document.createElement(isSheet ? 'a' : 'span');
         nameEl.className = 'mep-file-item-name';
         nameEl.textContent = name;
+        const fullName = (ext && !name.endsWith(`.${ext}`)) ? `${name}.${ext}` : name;
+        const filePath = currentPath ? `${currentPath}/${fullName}` : fullName;
+        if (isSheet) nameEl.href = getOpenUrl(filePath);
 
         const modEl = document.createElement('span');
         modEl.className = 'mep-file-modified';
@@ -305,9 +308,7 @@ export function renderFileBrowser(container, {
             appendDetail('Published date', 'Loading…', 'live');
 
             if (!statusPromise) {
-              const fullName = name.endsWith(`.${ext}`) ? name : `${name}.${ext}`;
-              const path = currentPath ? `${currentPath}/${fullName}` : fullName;
-              statusPromise = getManifestStatus(org, site, path);
+              statusPromise = getManifestStatus(org, site, filePath);
             }
             statusPromise.then((status) => {
               const previewDate = details.querySelector('[data-detail="preview"] .mep-file-detail-value');
@@ -351,9 +352,16 @@ export function renderFileBrowser(container, {
           openBtn.className = 'mep-file-open-label';
           openBtn.textContent = 'Open';
           row.append(openBtn);
-          row.addEventListener('click', () => {
-            const fullName = (ext && !name.endsWith(`.${ext}`)) ? `${name}.${ext}` : name;
-            onOpen(currentPath ? `${currentPath}/${fullName}` : fullName);
+          row.addEventListener('click', (event) => {
+            if (event.defaultPrevented || event.button !== 0) return;
+            if (event.ctrlKey && event.shiftKey && !event.metaKey && !event.altKey) {
+              event.preventDefault();
+              window.open(nameEl.href, '_blank', 'noopener,popup');
+              return;
+            }
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            onOpen(filePath);
           });
         }
       });

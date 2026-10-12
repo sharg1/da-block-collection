@@ -27,13 +27,16 @@ async function init() {
   }
 
   // Allow query param overrides for sandbox selection (e.g., ?org=da-cc&repo=da-cc-sandbox)
+  const shellContext = context.path ? { ...context } : null;
   const params = new URLSearchParams(window.location.search);
   const paramOrg = params.get('org');
   const paramRepo = params.get('repo');
   if (paramOrg) context.org = paramOrg;
   if (paramRepo) context.repo = paramRepo;
 
-  initApp(document.getElementById('app'), { context, token, actions });
+  initApp(document.getElementById('app'), {
+    context, shellContext, token, actions,
+  });
 }
 
 init();

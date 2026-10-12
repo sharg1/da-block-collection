@@ -956,6 +956,7 @@ body {
 }
 
 .mep-file-item {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 0 16px 0 20px;
@@ -966,7 +967,8 @@ body {
   background: var(--mep-surface);
 }
 
-.mep-file-item:hover {
+.mep-file-item:hover,
+.mep-file-item.is-sheet:focus-within {
   background: #f5f5f5;
 }
 
@@ -1003,7 +1005,15 @@ body {
 
 /* Sheet item highlight */
 .mep-file-item.is-sheet .mep-file-item-name {
+  color: inherit;
   font-weight: 600;
+  text-decoration: none;
+}
+
+.mep-file-item.is-sheet .mep-file-item-name::after {
+  content: "";
+  position: absolute;
+  inset: 0;
 }
 
 /* Modified date column */
@@ -1017,6 +1027,8 @@ body {
 }
 
 .mep-file-details-toggle {
+  position: relative;
+  z-index: 1;
   width: 28px;
   height: 28px;
   margin-left: 8px;
@@ -1098,7 +1110,8 @@ body {
   margin-left: 12px;
 }
 
-.mep-file-item:hover .mep-file-open-label {
+.mep-file-item:hover .mep-file-open-label,
+.mep-file-item.is-sheet:focus-within .mep-file-open-label {
   opacity: 1;
 }
 
