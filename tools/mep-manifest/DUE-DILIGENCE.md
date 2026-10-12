@@ -136,7 +136,7 @@ Open / New → Edit → Save → Preview → Publish
 
 ### File Browser
 
-The file browser provides navigation of the DA repository. It fetches directory listings from the DA Admin API, handles pagination transparently, and classifies items as folders, JSON sheets, or other documents. Only JSON sheets (manifest files) are actionable; all other file types are visible but non-interactive. Navigation is breadcrumb-based with path tracking.
+The file browser provides navigation of the DA repository. It fetches directory listings from the DA Admin API, handles pagination transparently, and classifies items as folders, JSON sheets, or other documents. Only JSON sheets (manifest files) are actionable; all other file types are visible but non-interactive. Expanding a manifest's details shows its creator and last editor, plus preview and publish timestamps loaded from the Admin status API on demand. Navigation is breadcrumb-based with path tracking.
 
 ### Experience Grid — Columns & Rows
 
