@@ -138,6 +138,10 @@ Open / New → Edit → Save → Preview → Publish
 
 The file browser provides navigation of the DA repository. It fetches directory listings from the DA Admin API, handles pagination transparently, and classifies items as folders, JSON sheets, or other documents. Only JSON sheets (manifest files) are actionable; all other file types are visible but non-interactive. Expanding a manifest's details shows its creator and last editor, plus preview and publish timestamps loaded from the Admin status API on demand. Navigation is breadcrumb-based with path tracking.
 
+Manifest rows are native links: a normal click or Enter opens the editor in place, Cmd-click (Mac) or Ctrl-click (Windows) opens a new tab, and Shift-click (Mac) or Ctrl+Shift-click (Windows) opens a new window. Middle-click and the browser's **Open Link in New Tab** context-menu action are also supported. The details button remains independent of the link.
+
+When embedded in DA, links use the authenticated DA app shell route and preserve the app reference, content organization/repository, and selected manifest's `path` query parameter. For example: `https://da.live/app/sharg1/da-block-collection/tools/mep-manifest/mep-manifest?ref=main&org=sharg1&repo=da-block-collection&path=manifests/example.json`. Standalone development links use the current tool URL instead.
+
 ### Experience Grid — Columns & Rows
 
 The experiences grid is the most complex part of the tool:

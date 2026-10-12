@@ -111,10 +111,28 @@ function showNewManifestDialog(prefillPath, onConfirm) {
 function showFileBrowser() {
   appContainer.innerHTML = '';
   const { org, site } = getOrgSite();
+  const context = sdk.shellContext || sdk.context || {};
+  const appUrl = context.path
+    ? new URL(
+      `/app/${context.org}/${context.repo}/${context.path}`,
+      context.daOrigin || 'https://da.live',
+    )
+    : new URL(window.location.href);
+  if (context.path) {
+    appUrl.search = context.search || window.location.search;
+    appUrl.hash = context.hash || window.location.hash;
+  }
   renderFileBrowser(appContainer, {
     org,
     site,
     startPath: '',
+    getOpenUrl: (path) => {
+      const url = new URL(appUrl);
+      url.searchParams.set('org', org);
+      url.searchParams.set('repo', site);
+      url.searchParams.set('path', path);
+      return url.href;
+    },
     onOpen: (path) => handleOpen(path),
     onNew: (filePath) => {
       // eslint-disable-next-line no-restricted-globals, no-alert
