@@ -1,4 +1,4 @@
-import { listFiles } from '../data/da-sheet-adapter.js';
+import { getManifestStatus, listFiles } from '../data/da-sheet-adapter.js';
 
 /**
  * Derive extension from an item — uses item.ext if present,
@@ -24,6 +24,19 @@ function formatDate(raw) {
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
   return `${day} ${mon} ${year} ${hh}:${mm}`;
+}
+
+function getIdentity(value) {
+  if (typeof value === 'string') return value || '—';
+  if (!value || typeof value !== 'object') return '—';
+  return value.displayName || value.name || value.email || '—';
+}
+
+function getStatusDate(status, field) {
+  const entry = status?.[field];
+  if (entry?.status === 200) return formatDate(entry.lastModified) || '—';
+  if (entry?.status === 404) return field === 'preview' ? 'Not previewed' : 'Not published';
+  return 'Unavailable';
 }
 
 /**
@@ -175,7 +188,8 @@ export function renderFileBrowser(container, {
     colHeader.innerHTML = '<span class="mep-file-col-check"></span>'
       + '<span class="mep-file-col-filter" title="Filter">&#9663;</span>'
       + '<span class="mep-file-col-name">NAME</span>'
-      + '<span class="mep-file-col-modified">MODIFIED</span>';
+      + '<span class="mep-file-col-modified">MODIFIED</span>'
+      + '<span class="mep-file-col-actions"></span>';
     wrap.append(colHeader);
 
     // ---- File list ----
@@ -243,6 +257,87 @@ export function renderFileBrowser(container, {
 
         row.append(chk, icon, nameEl, modEl);
 
+        if (isSheet) {
+          const detailsButton = document.createElement('button');
+          detailsButton.className = 'mep-file-details-toggle';
+          detailsButton.type = 'button';
+          detailsButton.textContent = '…';
+          detailsButton.setAttribute('aria-label', `Show details for ${name}`);
+          detailsButton.setAttribute('aria-expanded', 'false');
+
+          const details = document.createElement('div');
+          details.className = 'mep-file-details';
+          details.hidden = true;
+
+          const appendDetail = (label, value, key) => {
+            const field = document.createElement('div');
+            field.className = 'mep-file-detail';
+            if (key) field.dataset.detail = key;
+            const labelEl = document.createElement('span');
+            labelEl.className = 'mep-file-detail-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('span');
+            valueEl.className = 'mep-file-detail-value';
+            valueEl.textContent = value;
+            field.append(labelEl, valueEl);
+            details.append(field);
+            return valueEl;
+          };
+
+          let statusPromise;
+          detailsButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            details.hidden = !details.hidden;
+            detailsButton.setAttribute('aria-expanded', String(!details.hidden));
+            detailsButton.setAttribute(
+              'aria-label',
+              `${details.hidden ? 'Show' : 'Hide'} details for ${name}`,
+            );
+            if (details.hidden) return;
+
+            details.replaceChildren();
+            appendDetail('Created by', getIdentity(item.createdBy || item.createdby || item.author));
+            const lastModifiedBy = appendDetail(
+              'Last modified by',
+              getIdentity(item.lastModifiedBy || item.lastmodifiedby || item.modifiedBy),
+            );
+            appendDetail('Previewed date', 'Loading…', 'preview');
+            appendDetail('Published date', 'Loading…', 'live');
+
+            if (!statusPromise) {
+              const fullName = name.endsWith(`.${ext}`) ? name : `${name}.${ext}`;
+              const path = currentPath ? `${currentPath}/${fullName}` : fullName;
+              statusPromise = getManifestStatus(org, site, path);
+            }
+            statusPromise.then((status) => {
+              const previewDate = details.querySelector('[data-detail="preview"] .mep-file-detail-value');
+              const publishedDate = details.querySelector('[data-detail="live"] .mep-file-detail-value');
+              if (previewDate && publishedDate) {
+                previewDate.textContent = getStatusDate(status, 'preview');
+                publishedDate.textContent = getStatusDate(status, 'live');
+              }
+              if (lastModifiedBy.textContent === '—') {
+                lastModifiedBy.textContent = getIdentity(
+                  status?.edit?.lastModifiedBy || status?.preview?.lastModifiedBy,
+                );
+              }
+            }).catch((err) => {
+              statusPromise = null;
+              const previewDate = details.querySelector('[data-detail="preview"] .mep-file-detail-value');
+              const publishedDate = details.querySelector('[data-detail="live"] .mep-file-detail-value');
+              if (previewDate && publishedDate) {
+                previewDate.textContent = `Unavailable: ${err.message}`;
+                publishedDate.textContent = `Unavailable: ${err.message}`;
+              }
+            });
+          });
+
+          row.append(detailsButton);
+          listEl.append(row, details);
+        } else {
+          listEl.append(row);
+        }
+
         if (isFolder) {
           const chevron = document.createElement('span');
           chevron.className = 'mep-file-item-chevron';
@@ -261,8 +356,6 @@ export function renderFileBrowser(container, {
             onOpen(currentPath ? `${currentPath}/${fullName}` : fullName);
           });
         }
-
-        listEl.append(row);
       });
     } catch (err) {
       listEl.innerHTML = `<div class="mep-empty"><span class="mep-empty-icon">⚠️</span><span>${err.message}</span></div>`;

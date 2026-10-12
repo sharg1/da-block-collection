@@ -107,6 +107,15 @@ export async function publishManifest(org, site, path, ref = 'main') {
   return resp.json();
 }
 
+export async function getManifestStatus(org, site, path, ref = 'main') {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const url = `${HLX_ADMIN}/status/${encodeURIComponent(org)}/${encodeURIComponent(site)}`
+    + `/${encodeURIComponent(ref)}/${encodedPath}`;
+  const resp = await fetch(url, { headers: hlxHeaders() });
+  if (!resp.ok) throw new Error(`Failed to get manifest status: ${resp.status}`);
+  return resp.json();
+}
+
 // Conventional location of the optional extra-actions config sheet, relative
 // to the site root. Authors edit this as a normal DA sheet to add dropdown
 // options without a code deploy.

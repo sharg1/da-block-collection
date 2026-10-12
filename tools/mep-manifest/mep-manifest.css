@@ -943,6 +943,11 @@ body {
   text-align: right;
 }
 
+.mep-file-col-actions {
+  width: 36px;
+  flex-shrink: 0;
+}
+
 /* File list — white, full-width rows */
 .mep-file-list {
   flex: 1;
@@ -1011,6 +1016,59 @@ body {
   flex-shrink: 0;
 }
 
+.mep-file-details-toggle {
+  width: 28px;
+  height: 28px;
+  margin-left: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mep-text-secondary);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mep-file-details-toggle:hover,
+.mep-file-details-toggle:focus-visible {
+  background: #e8e8e8;
+  color: var(--mep-text);
+}
+
+.mep-file-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 12px 48px 12px 88px;
+  border-bottom: 1px solid var(--mep-border);
+  background: #fafafa;
+}
+
+.mep-file-details[hidden] {
+  display: none;
+}
+
+.mep-file-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mep-file-detail-label {
+  color: var(--mep-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.mep-file-detail-value {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
 /* Folder chevron — far right */
 .mep-file-item-chevron {
   color: var(--mep-text-secondary);
@@ -1042,6 +1100,14 @@ body {
 
 .mep-file-item:hover .mep-file-open-label {
   opacity: 1;
+}
+
+@media (width <= 700px) {
+  .mep-file-details {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 }
 
 /* Toast notification */
