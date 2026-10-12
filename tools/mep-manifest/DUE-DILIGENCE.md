@@ -142,6 +142,8 @@ Manifest rows are native links: a normal click or Enter opens the editor in plac
 
 When embedded in DA, links use the authenticated DA app shell route and preserve the app reference, content organization/repository, and selected manifest's `path` query parameter. For example: `https://da.live/app/sharg1/da-block-collection/tools/mep-manifest/mep-manifest?ref=main&org=sharg1&repo=da-block-collection&path=manifests/example.json`. Standalone development links use the current tool URL instead.
 
+The shell host is `https://da.live`, not the SDK context's `daOrigin`, which identifies the DA Admin API (`https://admin.da.live`).
+
 ### Experience Grid — Columns & Rows
 
 The experiences grid is the most complex part of the tool:
