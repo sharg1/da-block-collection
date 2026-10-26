@@ -313,7 +313,12 @@ export function showAddColumnDialog({
       showError(`A column named "${name}" already exists.`);
       return;
     }
-    onAdd(name);
+    try {
+      onAdd(name);
+    } catch (error) {
+      showError(error.message);
+      return;
+    }
     overlay.remove();
   });
 

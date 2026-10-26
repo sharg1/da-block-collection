@@ -5,6 +5,7 @@ import {
   createTextCell, createInputCell,
   showAddColumnDialog, showDeleteColumnDialog, showRenameColumnDialog,
 } from './grid-helpers.js';
+import { showToast } from './toast.js';
 
 // Maps action name → CSS class for the action <td> left-border accent
 const ACTION_CSS_MAP = {
@@ -49,6 +50,125 @@ export function renderExperiencesTab(container, model) {
   const wrap = document.createElement('div');
   wrap.className = 'mep-tab-content';
   wrap.id = 'tab-experiences';
+  let clipboard = null;
+  let activeMenu = null;
+  let openColumnDialog;
+
+  function openActions(anchor, kind, idx, refreshFn) {
+    document.activeElement?.blur();
+    if (activeMenu) activeMenu.remove();
+    const isColumn = kind === 'column';
+    const label = isColumn ? 'Column' : 'Row';
+    const menu = document.createElement('div');
+    menu.className = 'mep-grid-menu';
+    menu.setAttribute('popover', 'auto');
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', `${label} actions`);
+    const actions = [
+      {
+        label: `Copy ${label}`,
+        run: () => {
+          clipboard = {
+            kind,
+            data: isColumn ? model.copyColumn(idx) : model.copyRow(idx),
+          };
+          showToast('success', `${label} copied`);
+        },
+      },
+      {
+        label: `Paste ${label}`,
+        disabled: clipboard?.kind !== kind,
+        run: () => {
+          if (isColumn) model.pasteColumn(idx, clipboard.data);
+          else model.pasteRow(idx, clipboard.data);
+          refreshFn({ focusTarget: { kind, idx } });
+        },
+      },
+      ...[false, true].map((after) => ({
+        label: `Insert ${label} ${(isColumn ? ['Before', 'After'] : ['Above', 'Below'])[Number(after)]}`,
+        run: () => {
+          const position = idx + (after ? 1 : 0);
+          if (isColumn) {
+            openColumnDialog(position);
+          } else {
+            model.insertRow(position);
+            refreshFn({ focusTarget: { kind, idx: position } });
+          }
+        },
+      })),
+    ];
+    actions.forEach((action) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mep-grid-menu-item';
+      button.setAttribute('role', 'menuitem');
+      button.textContent = action.label;
+      button.disabled = Boolean(action.disabled);
+      button.addEventListener('click', () => {
+        menu.hidePopover();
+        anchor.focus({ preventScroll: true });
+        try {
+          action.run();
+        } catch (error) {
+          showToast('error', `${label} action failed`, { detail: error.message });
+        }
+      });
+      menu.append(button);
+    });
+    menu.addEventListener('keydown', (event) => {
+      const buttons = [...menu.querySelectorAll('button:not(:disabled)')];
+      const current = buttons.indexOf(document.activeElement);
+      let next;
+      if (event.key === 'ArrowDown') next = (current + 1) % buttons.length;
+      if (event.key === 'ArrowUp') next = (current - 1 + buttons.length) % buttons.length;
+      if (event.key === 'Home') next = 0;
+      if (event.key === 'End') next = buttons.length - 1;
+      if (next !== undefined) {
+        event.preventDefault();
+        buttons[next].focus();
+      }
+      if (event.key === 'Escape' || event.key === 'Tab') {
+        if (event.key === 'Escape') event.preventDefault();
+        menu.hidePopover();
+        anchor.focus({ preventScroll: true });
+      }
+    });
+    menu.addEventListener('toggle', () => {
+      const open = menu.matches(':popover-open');
+      anchor.setAttribute('aria-expanded', String(open));
+    });
+    wrap.append(menu);
+    activeMenu = menu;
+    menu.showPopover();
+    const rect = anchor.getBoundingClientRect();
+    menu.style.left = `${Math.max(4, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 4))}px`;
+    menu.style.top = `${Math.max(4, Math.min(rect.bottom, window.innerHeight - menu.offsetHeight - 4))}px`;
+    menu.querySelector('button:not(:disabled)').focus();
+  }
+
+  function createActionsButton(kind, idx, refreshFn) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mep-grid-actions';
+    button.textContent = '...';
+    button.setAttribute('aria-label', kind === 'column'
+      ? `Actions for column ${model.experiences.columns[idx].name}`
+      : `Actions for row ${idx + 1}`);
+    button.title = button.getAttribute('aria-label');
+    button.setAttribute('aria-haspopup', 'menu');
+    button.setAttribute('aria-expanded', 'false');
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openActions(button, kind, idx, refreshFn);
+    });
+    button.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        openActions(button, kind, idx, refreshFn);
+      }
+    });
+    return button;
+  }
 
   // ---- Info bar (built once, outside render()) ----
   const infoBar = document.createElement('div');
@@ -119,6 +239,10 @@ export function renderExperiencesTab(container, model) {
   // view and focus its first field instead of preserving the prior scroll
   // position. Used by "+ Add Row"; every other caller preserves position.
   function render(opts = {}) {
+    if (activeMenu) {
+      activeMenu.remove();
+      activeMenu = null;
+    }
     // Preserve scroll position before re-rendering
     let savedScrollLeft = 0;
     let savedScrollTop = 0;
@@ -204,6 +328,12 @@ export function renderExperiencesTab(container, model) {
         });
       });
       th.prepend(colNameLabel);
+      const actionsButton = createActionsButton('column', colIdx, render);
+      th.append(actionsButton);
+      th.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        openActions(actionsButton, 'column', colIdx, render);
+      });
 
       const grip = document.createElement('span');
       grip.className = 'col-drag-handle';
@@ -246,15 +376,16 @@ export function renderExperiencesTab(container, model) {
     addColTh.className = 'col-add';
     addColTh.textContent = '+';
     addColTh.title = 'Add Experience Column';
-    addColTh.addEventListener('click', () => showAddColumnDialog({
+    openColumnDialog = (position = model.experiences.columns.length) => showAddColumnDialog({
       title: 'Add Experience Column',
       placeholder: 'e.g., all, target-returning-users',
       isDuplicate: (name) => isDuplicateColumnName(model, name),
       onAdd: (name) => {
-        model.addColumn(name);
-        render();
+        model.insertColumn(position, name);
+        render({ focusTarget: { kind: 'column', idx: position } });
       },
-    }));
+    });
+    addColTh.addEventListener('click', () => openColumnDialog());
     headerRow.append(addColTh);
 
     headerRow.append(createResizableTh('', 'col-handle'));
@@ -310,6 +441,12 @@ export function renderExperiencesTab(container, model) {
 
       handle.append(grip, rowNum);
       handleTd.append(handle);
+      const actionsButton = createActionsButton('row', rowIdx, render);
+      handleTd.append(actionsButton);
+      handleTd.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        openActions(actionsButton, 'row', rowIdx, render);
+      });
 
       // Row resize handle — drag the bottom edge to set an explicit row height.
       const rowResizeHandle = document.createElement('span');
@@ -400,6 +537,17 @@ export function renderExperiencesTab(container, model) {
         if (field) field.focus({ preventScroll: true });
       } else {
         gridWrapper.scrollTop = savedScrollTop;
+      }
+      if (opts.focusTarget && !activeMenu?.matches(':popover-open')) {
+        const { kind, idx } = opts.focusTarget;
+        const target = kind === 'column'
+          ? headerRow.children[FIXED_COL_COUNT + idx]
+          : tbody.children[idx];
+        const field = target?.querySelector(kind === 'column' ? '.mep-grid-actions' : 'select, textarea, input');
+        if (field) {
+          field.focus({ preventScroll: true });
+          field.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
       }
     });
   }

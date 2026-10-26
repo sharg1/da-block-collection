@@ -105,12 +105,7 @@ export class ManifestModel {
   /* ---- Experience Columns ---- */
 
   addColumn(name, isDefault = false) {
-    this.experiences.columns.push({ name, isDefault });
-    // Add empty value for this column to all existing rows
-    this.experiences.rows.forEach((row) => {
-      row.values[name] = '';
-    });
-    this.emit();
+    this.insertColumn(this.experiences.columns.length, name, isDefault);
   }
 
   removeColumn(idx) {
@@ -154,21 +149,45 @@ export class ManifestModel {
     this.emit();
   }
 
+  insertColumn(idx, name, isDefault = false) {
+    const trimmed = name.trim();
+    const reserved = ['action', 'selector', 'page filter', 'pagefilter', 'page filter (optional)', '__proto__', 'constructor', 'prototype'];
+    if (!Number.isInteger(idx) || idx < 0 || idx > this.experiences.columns.length) {
+      throw new Error('The column insertion position is invalid.');
+    }
+    if (!trimmed || reserved.includes(trimmed.toLowerCase())) {
+      throw new Error('Enter an experience name that is not a fixed column name or reserved key.');
+    }
+    if (this.experiences.columns.some((col) => col.name.toLowerCase() === trimmed.toLowerCase())) {
+      throw new Error(`A column named "${trimmed}" already exists.`);
+    }
+    this.experiences.columns.splice(idx, 0, { name: trimmed, isDefault });
+    this.experiences.rows.forEach((row) => {
+      row.values[trimmed] = '';
+    });
+    this.emit();
+  }
+
+  copyColumn(idx) {
+    const col = this.experiences.columns[idx];
+    if (!col) throw new Error('The column to copy no longer exists.');
+    return this.experiences.rows.map((row) => row.values[col.name] ?? '');
+  }
+
+  pasteColumn(idx, values) {
+    const col = this.experiences.columns[idx];
+    if (!col) throw new Error('The destination column no longer exists.');
+    if (!Array.isArray(values)) throw new Error('Copy an experience column before pasting.');
+    this.experiences.rows.forEach((row, rowIdx) => {
+      row.values[col.name] = values[rowIdx] ?? '';
+    });
+    this.emit();
+  }
+
   /* ---- Experience Rows ---- */
 
   addRow() {
-    const values = {};
-    this.experiences.columns.forEach((col) => {
-      values[col.name] = '';
-    });
-    this.experiences.rows.push({
-      action: '',
-      selector: '',
-      pageFilter: '',
-      values,
-    });
-    this.experiences.rowHeights.push(null);
-    this.emit();
+    this.insertRow(this.experiences.rows.length);
   }
 
   updateRow(rowIdx, field, value) {
@@ -192,6 +211,39 @@ export class ManifestModel {
     this.experiences.rows.splice(toIdx, 0, row);
     const [height] = this.experiences.rowHeights.splice(fromIdx, 1);
     this.experiences.rowHeights.splice(toIdx, 0, height);
+    this.emit();
+  }
+
+  insertRow(idx) {
+    if (!Number.isInteger(idx) || idx < 0 || idx > this.experiences.rows.length) {
+      throw new Error('The row insertion position is invalid.');
+    }
+    const values = Object.fromEntries(this.experiences.columns.map((col) => [col.name, '']));
+    this.experiences.rows.splice(idx, 0, {
+      action: '', selector: '', pageFilter: '', values,
+    });
+    this.experiences.rowHeights.splice(idx, 0, null);
+    this.emit();
+  }
+
+  copyRow(idx) {
+    const row = this.experiences.rows[idx];
+    if (!row) throw new Error('The row to copy no longer exists.');
+    return { ...row, values: { ...row.values } };
+  }
+
+  pasteRow(idx, snapshot) {
+    if (!this.experiences.rows[idx]) throw new Error('The destination row no longer exists.');
+    if (!snapshot || !snapshot.values) throw new Error('Copy a row before pasting.');
+    const values = Object.fromEntries(
+      this.experiences.columns.map((col) => [col.name, snapshot.values[col.name] ?? '']),
+    );
+    this.experiences.rows[idx] = {
+      action: snapshot.action,
+      selector: snapshot.selector,
+      pageFilter: snapshot.pageFilter,
+      values,
+    };
     this.emit();
   }
 

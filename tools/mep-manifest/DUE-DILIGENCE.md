@@ -152,6 +152,10 @@ The experiences grid is the most complex part of the tool:
 - **Rows are reorderable** via drag-and-drop, allowing authors to control the execution sequence of personalization rules.
 - **Adding a column** automatically adds an empty value for that column to every existing row, ensuring the model never has missing entries.
 - **Structural changes** (add/remove row or column) trigger a full grid re-render. Individual cell edits update only the model — no re-render — keeping the typing experience smooth.
+- **Row and experience-column actions** are available from the `...` button or by right-clicking a row handle or experience header. Copy captures a snapshot in an editor-local clipboard; Paste replaces the destination contents without changing its name, default-column status, or sizing. Insert Before/After (Above/Below for rows) creates a blank entry. To duplicate, copy, insert, then paste. Inserted columns require a unique experience name.
+- **Clipboard boundaries:** only one row or column is copied at a time. Paste is disabled for a different entry type. The clipboard resets when another manifest is opened or a new editor is created, and does not use the OS clipboard. Rows map experience values by column name; columns map values by row position. Missing values become blank and values outside the destination grid are omitted.
+
+Model regression tests (Node.js 22+): `node --test tools/mep-manifest/tests/manifest-model.test.mjs`.
 
 ### Data Serialization
 

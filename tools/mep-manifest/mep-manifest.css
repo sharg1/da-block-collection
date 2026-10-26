@@ -499,9 +499,9 @@ body {
 
 /* Row handle */
 .mep-grid td.col-handle {
-  width: 32px;
-  min-width: 32px;
-  max-width: 32px;
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
   padding: 0;
   vertical-align: middle;
 }
@@ -511,7 +511,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  width: 100%;
+  width: 36px;
   height: 100%;
   min-height: 36px;
   color: var(--mep-text-secondary);
@@ -527,6 +527,37 @@ body {
 .mep-grid .drag-handle-grip {
   font-size: 13px;
   line-height: 1;
+}
+
+.mep-grid-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--mep-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mep-grid-actions:hover,
+.mep-grid-actions[aria-expanded="true"] {
+  background: rgb(128 128 128 / 20%);
+}
+
+.mep-grid-actions:focus-visible {
+  outline: 2px solid var(--mep-primary);
+  outline-offset: 1px;
+}
+
+.mep-grid td.col-handle .mep-grid-actions {
+  position: absolute;
+  top: 6px;
+  right: 1px;
 }
 
 .mep-grid tr.row-dragging {
@@ -1276,4 +1307,48 @@ body {
 .mep-empty-icon {
   font-size: 48px;
   opacity: 0.3;
+}
+
+.mep-grid-menu {
+  position: fixed;
+  inset: auto;
+  min-width: 190px;
+  max-width: calc(100vw - 8px);
+  max-height: calc(100vh - 8px);
+  overflow: auto;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--mep-border);
+  border-radius: var(--mep-radius);
+  background: var(--mep-surface);
+  color: var(--mep-text);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 16%);
+}
+
+.mep-grid-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mep-grid-menu-item:disabled {
+  color: var(--mep-text-secondary);
+  cursor: not-allowed;
+}
+
+.mep-grid-menu-item:focus-visible {
+  background: var(--mep-bg);
+  outline: 2px solid var(--mep-primary);
+  outline-offset: -2px;
+}
+
+.mep-grid-menu-item:hover:not(:disabled) {
+  background: var(--mep-bg);
 }
