@@ -1,4 +1,4 @@
-import { ManifestModel } from './data/manifest-model.js';
+import { CONSENT_TYPES, ManifestModel } from './data/manifest-model.js';
 import {
   openManifest, saveManifest, previewManifest, publishManifest, setToken, fetchActionsConfig,
 } from './data/da-sheet-adapter.js';
@@ -169,7 +169,15 @@ async function saveModel() {
   }
 }
 
+function validateConsentType() {
+  if (CONSENT_TYPES.includes(model.info.consentType)) return true;
+  setStatus(statusBar, 'Consent Type is required.', 'unsaved');
+  showToast('error', 'Choose a consent type before saving.');
+  return false;
+}
+
 async function handleSave() {
+  if (!validateConsentType()) return false;
   showToast('progress', 'Saving…');
   const ok = await saveModel();
   if (ok) {
@@ -195,7 +203,7 @@ async function handlePreview() {
     alert('Please save the manifest first.');
     return;
   }
-  await saveModel();
+  if (!validateConsentType() || !(await saveModel())) return;
   const { org, site } = getOrgSite();
   setButtonLoading(previewBtn, true, 'Previewing…');
   setStatus(statusBar, 'Generating preview…', '');
@@ -220,7 +228,7 @@ async function handlePublish() {
     alert('Please save the manifest first.');
     return;
   }
-  await saveModel();
+  if (!validateConsentType() || !(await saveModel())) return;
   const { org, site } = getOrgSite();
   setButtonLoading(publishBtn, true, 'Publishing…');
   setStatus(statusBar, 'Publishing…', '');
