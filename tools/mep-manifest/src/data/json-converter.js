@@ -29,6 +29,7 @@ export function toMepJson(model) {
   if (model.info.type) info.manifesttype = model.info.type;
   if (model.info.executionOrder) info.executionorder = model.info.executionOrder;
   if (model.info.overrideName) info.overridename = model.info.overrideName;
+  if (model.info.consentType) info['manifest-consent-type'] = model.info.consentType;
 
   let placeholders;
   if (model.info.type === 'promo') {

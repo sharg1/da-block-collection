@@ -18,8 +18,18 @@ const ACTIONS = [
 
 const MANIFEST_TYPES = ['personalization', 'test', 'promo'];
 const EXECUTION_ORDERS = ['First', 'Normal', 'Last'];
+const CONSENT_TYPES = [
+  'Promo or No Offer Changes',
+  'Non-Personalized Offer Test',
+  'Personalized Offer',
+];
 
-export { ACTIONS, MANIFEST_TYPES, EXECUTION_ORDERS };
+export {
+  ACTIONS,
+  MANIFEST_TYPES,
+  EXECUTION_ORDERS,
+  CONSENT_TYPES,
+};
 
 export class ManifestModel {
   constructor() {
@@ -27,6 +37,7 @@ export class ManifestModel {
       type: 'personalization',
       executionOrder: 'Normal',
       overrideName: '',
+      consentType: '',
     };
     this.placeholders = [];
     this.experiences = {
@@ -346,6 +357,7 @@ export class ManifestModel {
       if (key === 'manifesttype' || key === 'manifest-type') this.info.type = rawValue || 'personalization';
       if (key === 'executionorder' || key === 'execution-order' || key === 'manifest-execution-order') this.info.executionOrder = rawValue || 'Normal';
       if (key === 'overridename' || key === 'override-name' || key === 'manifest-override-name') this.info.overrideName = rawValue || '';
+      if (key === 'manifest-consent-type') this.info.consentType = rawValue || '';
     });
 
     // Load placeholders
@@ -487,6 +499,7 @@ export class ManifestModel {
       { key: 'manifest-type', value: this.info.type },
       { key: 'manifest-override-name', value: this.info.overrideName },
       { key: 'manifest-execution-order', value: this.info.executionOrder },
+      { key: 'manifest-consent-type', value: this.info.consentType },
       { key: 'manifest-default-column', value: defaultCol ? defaultCol.name : '' },
     ];
 

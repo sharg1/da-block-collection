@@ -1,4 +1,6 @@
-import { MANIFEST_TYPES, EXECUTION_ORDERS } from '../data/manifest-model.js';
+import {
+  MANIFEST_TYPES, EXECUTION_ORDERS, CONSENT_TYPES,
+} from '../data/manifest-model.js';
 import { getActions, isExtendedAction, getExtendedActionColor } from '../data/actions-registry.js';
 import {
   createResizableTh, attachColumnDragReorder, attachRowDragReorder, attachRowResize,
@@ -72,6 +74,28 @@ export function renderExperiencesTab(container, model) {
   typeSelect.addEventListener('change', (e) => model.setInfo('type', e.target.value));
   typeField.append(typeLabel, typeSelect);
 
+  const consentField = document.createElement('div');
+  consentField.className = 'mep-field';
+  const consentLabel = document.createElement('label');
+  consentLabel.className = 'mep-field-label';
+  consentLabel.textContent = 'Consent Type';
+  const consentSelect = document.createElement('select');
+  consentSelect.className = 'mep-select';
+  consentSelect.required = true;
+  const consentPlaceholder = document.createElement('option');
+  consentPlaceholder.value = '';
+  consentPlaceholder.textContent = 'Select consent type';
+  consentSelect.append(consentPlaceholder);
+  CONSENT_TYPES.forEach((consentType) => {
+    const opt = document.createElement('option');
+    opt.value = consentType;
+    opt.textContent = consentType;
+    consentSelect.append(opt);
+  });
+  consentSelect.value = model.info.consentType;
+  consentSelect.addEventListener('change', (e) => model.setInfo('consentType', e.target.value));
+  consentField.append(consentLabel, consentSelect);
+
   // The Placeholders tab's own Type selector can also change model.info.type
   // (switching to/from promo) — keep this select's displayed value in sync
   // when that happens, since it's otherwise only set once at build time.
@@ -111,7 +135,7 @@ export function renderExperiencesTab(container, model) {
   nameInput.addEventListener('change', (e) => model.setInfo('overrideName', e.target.value));
   nameField.append(nameLabel, nameInput);
 
-  infoBar.append(typeField, orderField, nameField);
+  infoBar.append(typeField, consentField, orderField, nameField);
   wrap.append(infoBar);
 
   // ---- Grid (rebuilt on each render()) ----
